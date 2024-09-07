@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Leer las variables de entorno del archivo .env
+# Leer las variables de entorno
 odoo_url = os.getenv('ODOO_URL')
 db = os.getenv('ODOO_DB')
 username = os.getenv('ODOO_USERNAME')
