@@ -1,0 +1,52 @@
+from flask import Flask, request, jsonify
+import xmlrpc.client
+
+app = Flask(__name__)
+
+# Datos de conexión a Odoo
+odoo_url = 'http://tuservidorodoo.com'
+db = 'nombre_base_de_datos'
+username = 'tu_usuario'
+password = 'tu_contraseña'
+
+# Inicializar conexión a Odoo
+common = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/common')
+uid = common.authenticate(db, username, password, {})
+
+models = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/object')
+
+@app.route('/create_opportunity', methods=['POST'])
+def create_opportunity():
+    try:
+        # Extraer datos del cuerpo de la solicitud
+        data = request.json
+
+        # Parámetros requeridos para crear una oportunidad
+        name = data.get('name')
+        partner_id = data.get('partner_id')
+        user_id = data.get('user_id')  # Representante asignado (opcional)
+        stage_id = data.get('stage_id')  # Etapa de la oportunidad (opcional)
+
+        # Crear oportunidad en el modelo 'crm.lead'
+        opportunity_id = models.execute_kw(
+            db, uid, password, 'crm.lead', 'create', [{
+                'name': name,
+                'partner_id': partner_id,
+                'user_id': user_id,
+                'stage_id': stage_id,
+            }]
+        )
+
+        return jsonify({
+            'status': 'success',
+            'opportunity_id': opportunity_id
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
