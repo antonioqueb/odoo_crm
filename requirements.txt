@@ -1,2 +1,1 @@
 Flask==2.0.2
-xmlrpc.client==1.0.1
