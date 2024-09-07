@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify
 import xmlrpc.client
+import os
 
 app = Flask(__name__)
 
-# Datos de conexión a Odoo
-odoo_url = 'http://tuservidorodoo.com'
-db = 'nombre_base_de_datos'
-username = 'tu_usuario'
-password = 'tu_contraseña'
+# Leer las variables de entorno del archivo .env
+odoo_url = os.getenv('ODOO_URL')
+db = os.getenv('ODOO_DB')
+username = os.getenv('ODOO_USERNAME')
+password = os.getenv('ODOO_PASSWORD')
 
 # Inicializar conexión a Odoo
 common = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/common')
