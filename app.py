@@ -39,13 +39,14 @@ def create_opportunity():
         company_id = data.get('company_id')  # ID de la empresa (multiempresa)
         start_time = data.get('start_time')  # Hora de inicio para el evento en el calendario
         end_time = data.get('end_time')  # Hora de fin para el evento en el calendario
-
+        phone = data.get('phone')  # Agregamos el teléfono
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
             partner_id = models.execute_kw(
                 db, uid, password, 'res.partner', 'create', [{
                     'name': partner_name,
                     'email': partner_email,
+                    'phone': phone,  
                 }]
             )
 
@@ -59,6 +60,7 @@ def create_opportunity():
                 'expected_revenue': expected_revenue,
                 'probability': probability,
                 'company_id': company_id,  # Asignación de la empresa
+                'phone': phone,
             }]
         )
 
