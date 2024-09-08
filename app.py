@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import xmlrpc.client
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -97,14 +97,19 @@ def create_opportunity():
             'message': str(e)
         }), 500
 
-
-@app.route('/company_availability', methods=['GET'])
-def company_availability():
+# Nueva ruta para visualizar bloques de tiempo disponibles
+@app.route('/available_slots', methods=['GET'])
+def available_slots():
     try:
         # Obtener parámetros de consulta (rango de fechas y empresa)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
         company_id = int(request.args.get('company_id'))
+        user_id = int(request.args.get('user_id'))
+
+        # Convertir las fechas de string a objetos datetime
+        start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
+        end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
 
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
         events = models.execute_kw(
@@ -112,13 +117,42 @@ def company_availability():
                 ('start', '>=', start_time),
                 ('stop', '<=', end_time),
                 ('company_id', '=', company_id),
+                ('user_id', '=', user_id),
             ]],
-            {'fields': ['name', 'start', 'stop', 'user_id', 'partner_ids']}
+            {'fields': ['start', 'stop']}
         )
+
+        # Convertir los tiempos de eventos a datetime y ordenarlos por inicio
+        busy_times = [(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S'), 
+                       datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')) 
+                      for event in events]
+        busy_times.sort()
+
+        # Definir bloques de tiempo disponibles de una hora
+        available_slots = []
+        current_time = start_dt
+
+        while current_time + timedelta(hours=1) <= end_dt:
+            next_time = current_time + timedelta(hours=1)
+
+            # Verificar si el bloque actual está ocupado por algún evento
+            is_free = True
+            for busy_start, busy_end in busy_times:
+                if busy_start < next_time and busy_end > current_time:
+                    is_free = False
+                    break
+
+            if is_free:
+                available_slots.append({
+                    'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
+                })
+
+            current_time = next_time
 
         return jsonify({
             'status': 'success',
-            'events': events
+            'available_slots': available_slots
         }), 200
 
     except Exception as e:
