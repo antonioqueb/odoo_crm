@@ -22,16 +22,27 @@ def create_opportunity():
         # Extraer datos del cuerpo de la solicitud
         data = request.json
 
-        # Parámetros requeridos para crear una oportunidad
+        # Parámetros para crear una oportunidad
         name = data.get('name')
         partner_id = data.get('partner_id')
+        partner_name = data.get('partner_name')
+        partner_email = data.get('partner_email')
         user_id = data.get('user_id')  # Representante asignado (opcional)
         stage_id = data.get('stage_id')  # Etapa de la oportunidad (opcional)
         expected_revenue = data.get('expected_revenue')  # Ingresos esperados
         probability = data.get('probability')  # Probabilidad de éxito
         company_id = data.get('company_id')  # ID de la empresa (multiempresa)
 
-        # Crear oportunidad en el modelo 'crm.lead'
+        # Si no existe partner_id, crear el partner
+        if not partner_id and partner_name and partner_email:
+            partner_id = models.execute_kw(
+                db, uid, password, 'res.partner', 'create', [{
+                    'name': partner_name,
+                    'email': partner_email,
+                }]
+            )
+
+        # Crear la oportunidad en el modelo 'crm.lead'
         opportunity_id = models.execute_kw(
             db, uid, password, 'crm.lead', 'create', [{
                 'name': name,
