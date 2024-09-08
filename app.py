@@ -54,7 +54,7 @@ def create_opportunity():
                 'stage_id': stage_id,
                 'expected_revenue': expected_revenue,
                 'probability': probability,
-                'company_id': company_id,
+                'company_id': company_id,  # Asignación de la empresa
             }]
         )
 
@@ -65,7 +65,6 @@ def create_opportunity():
             'stop': end_time,
             'user_id': user_id,
             'partner_ids': [(6, 0, [partner_id])],
-            'company_id': company_id,
         }
         
         # Validar que no exista ya un evento en el mismo rango de horas
