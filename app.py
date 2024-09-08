@@ -104,11 +104,10 @@ def create_opportunity():
             'message': str(e)
         }), 500
 
-# Nueva ruta para visualizar bloques de tiempo disponibles
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-        # Obtener parámetros de consulta (rango de fechas y empresa)
+        # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
         company_id = int(request.args.get('company_id'))
@@ -123,16 +122,19 @@ def available_slots():
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '>=', start_time),
                 ('stop', '<=', end_time),
-                ('company_id', '=', company_id),
-                ('user_id', '=', user_id),
+                ('company_id', '=', company_id),  # Filtrar por company_id
+                ('user_id', '=', user_id),        # Filtrar por user_id
             ]],
-            {'fields': ['start', 'stop']}
+            {'fields': ['start', 'stop', 'company_id']}
         )
+
+        # Verificar que los eventos tienen el company_id correcto (si es necesario)
+        filtered_events = [event for event in events if event['company_id'][0] == company_id]
 
         # Convertir los tiempos de eventos a datetime y ordenarlos por inicio
         busy_times = [(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S'), 
                        datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')) 
-                      for event in events]
+                      for event in filtered_events]
         busy_times.sort()
 
         # Definir bloques de tiempo disponibles de una hora
@@ -145,7 +147,8 @@ def available_slots():
             # Verificar si el bloque actual está ocupado por algún evento
             is_free = True
             for busy_start, busy_end in busy_times:
-                if busy_start < next_time and busy_end > current_time:
+                # Condición mejorada para detectar solapamientos
+                if max(busy_start, current_time) < min(busy_end, next_time):
                     is_free = False
                     break
 
@@ -167,6 +170,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
