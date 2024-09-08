@@ -130,7 +130,10 @@ def available_slots():
             ("13:00", "14:00"),
             ("14:00", "15:00"),
             ("15:00", "16:00"),
-            ("16:00", "17:00")
+            ("16:00", "17:00"),
+            ("17:00", "18:00"),
+            ("18:00", "19:00"),
+            ("19:00", "20:00")
         ]
 
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
