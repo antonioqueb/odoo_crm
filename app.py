@@ -2,8 +2,12 @@ from flask import Flask, request, jsonify
 import xmlrpc.client
 import os
 from datetime import datetime, timedelta
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Habilitar CORS para permitir solicitudes solo desde el dominio especificado
+CORS(app, resources={r"/*": {"origins": "https://inventario-plus.gestpro.cloud"}})
 
 # Leer las variables de entorno
 odoo_url = os.getenv('ODOO_URL')
