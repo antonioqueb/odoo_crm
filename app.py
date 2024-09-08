@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import xmlrpc.client
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -90,6 +90,36 @@ def create_opportunity():
             'status': 'success',
             'opportunity_id': opportunity_id
         }), 201
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/company_availability', methods=['GET'])
+def company_availability():
+    try:
+        # Obtener parámetros de consulta (rango de fechas y empresa)
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+        company_id = int(request.args.get('company_id'))
+
+        # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
+        events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_read', [[
+                ('start', '>=', start_time),
+                ('stop', '<=', end_time),
+                ('company_id', '=', company_id),
+            ]],
+            {'fields': ['name', 'start', 'stop', 'user_id', 'partner_ids']}
+        )
+
+        return jsonify({
+            'status': 'success',
+            'events': events
+        }), 200
 
     except Exception as e:
         return jsonify({
