@@ -65,6 +65,7 @@ def create_opportunity():
             'stop': end_time,
             'user_id': user_id,
             'partner_ids': [(6, 0, [partner_id])],
+            'company_id': company_id,  # Asignación de la empresa al evento
         }
         
         # Validar que no exista ya un evento en el mismo rango de horas
@@ -73,6 +74,7 @@ def create_opportunity():
                 ('start', '<=', end_time),
                 ('stop', '>=', start_time),
                 ('user_id', '=', user_id),
+                ('company_id', '=', company_id),  # Filtrar por empresa
             ]]
         )
 
