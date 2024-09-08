@@ -68,13 +68,13 @@ def create_opportunity():
             'company_id': company_id,  # Asignación de la empresa al evento
         }
         
-        # Validar que no exista ya un evento en el mismo rango de horas
+        # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
                 ('start', '<=', end_time),
                 ('stop', '>=', start_time),
                 ('user_id', '=', user_id),
-                ('company_id', '=', company_id),  # Filtrar por empresa
+                ('company_id', '=', company_id),  # Filtrar por la misma empresa
             ]]
         )
 
@@ -83,7 +83,7 @@ def create_opportunity():
         else:
             return jsonify({
                 'status': 'error',
-                'message': 'Este horario ya está reservado para otro evento.'
+                'message': 'Este horario ya está reservado para otro evento en la misma empresa.'
             }), 400
 
         return jsonify({
