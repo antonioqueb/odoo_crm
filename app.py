@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import xmlrpc.client
 import os
 from datetime import datetime, timedelta
+import pytz  # Biblioteca para manejo de zonas horarias
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -20,6 +21,9 @@ common = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/common')
 uid = common.authenticate(db, username, password, {})
 
 models = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/object')
+
+# Zona horaria de la Ciudad de México
+mexico_tz = pytz.timezone('America/Mexico_City')
 
 @app.route('/create_opportunity', methods=['POST'])
 def create_opportunity():
@@ -113,9 +117,9 @@ def available_slots():
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
 
-        # Convertir las fechas de string a objetos datetime
-        start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
-        end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
+        # Convertir las fechas de string a objetos datetime en la zona horaria de México
+        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
@@ -138,8 +142,8 @@ def available_slots():
         )
 
         # Verificar que los eventos tienen el company_id correcto
-        busy_times = [(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S'), 
-                       datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')) 
+        busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')), 
+                       mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S'))) 
                       for event in events if event['company_id'][0] == company_id]
 
         # Ordenar los tiempos ocupados por su inicio
@@ -183,8 +187,6 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
-
-
 
 
 if __name__ == '__main__':
