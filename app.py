@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import xmlrpc.client
 import os
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -51,13 +52,46 @@ def create_opportunity():
                 'stage_id': stage_id,
                 'expected_revenue': expected_revenue,
                 'probability': probability,
-                'company_id': company_id,  # Asignación de la empresa
+                'company_id': company_id,
+            }]
+        )
+
+        # Verificar disponibilidad en el calendario y crear un evento
+        start_date = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+        end_date = start_date + timedelta(hours=1)
+        
+        # Verificar que el bloque de tiempo esté libre
+        calendar_events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_read', [[
+                ['start', '<=', end_date.isoformat()],
+                ['stop', '>=', start_date.isoformat()]
+            ]],
+            {'fields': ['start', 'stop']}
+        )
+
+        if calendar_events:
+            return jsonify({
+                'status': 'error',
+                'message': 'El bloque de tiempo ya está ocupado.'
+            }), 409
+
+        # Crear el evento en el calendario
+        event_id = models.execute_kw(
+            db, uid, password, 'calendar.event', 'create', [{
+                'name': f'Consulta con {partner_name}',
+                'start': start_date.isoformat(),
+                'stop': end_date.isoformat(),
+                'partner_ids': [(4, partner_id)],  # Relacionar con el cliente
+                'allday': False,
+                'user_id': user_id,
+                'company_id': company_id,
             }]
         )
 
         return jsonify({
             'status': 'success',
-            'opportunity_id': opportunity_id
+            'opportunity_id': opportunity_id,
+            'calendar_event_id': event_id
         }), 201
 
     except Exception as e:
