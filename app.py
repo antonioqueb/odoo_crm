@@ -117,6 +117,15 @@ def available_slots():
         start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
         end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
 
+        # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
+        working_hours = [
+            ("10:00", "11:00"),
+            ("13:00", "14:00"),
+            ("14:00", "15:00"),
+            ("15:00", "16:00"),
+            ("16:00", "17:00")
+        ]
+
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
@@ -147,12 +156,16 @@ def available_slots():
             # Verificar si el bloque actual está ocupado por algún evento
             is_free = True
             for busy_start, busy_end in busy_times:
-                # Condición mejorada para detectar solapamientos
                 if max(busy_start, current_time) < min(busy_end, next_time):
                     is_free = False
                     break
 
-            if is_free:
+            # Convertir horas a string para comparación
+            current_time_str = current_time.strftime('%H:%M')
+            next_time_str = next_time.strftime('%H:%M')
+
+            # Si el horario está libre y coincide con tus horarios, lo agregamos a los disponibles
+            if is_free and (current_time_str, next_time_str) in working_hours:
                 available_slots.append({
                     'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
                     'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
@@ -170,6 +183,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
