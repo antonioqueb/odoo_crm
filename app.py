@@ -137,13 +137,12 @@ def available_slots():
             {'fields': ['start', 'stop', 'company_id']}
         )
 
-        # Verificar que los eventos tienen el company_id correcto (si es necesario)
-        filtered_events = [event for event in events if event['company_id'][0] == company_id]
-
-        # Convertir los tiempos de eventos a datetime y ordenarlos por inicio
+        # Verificar que los eventos tienen el company_id correcto
         busy_times = [(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S'), 
                        datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')) 
-                      for event in filtered_events]
+                      for event in events if event['company_id'][0] == company_id]
+
+        # Ordenar los tiempos ocupados por su inicio
         busy_times.sort()
 
         # Definir bloques de tiempo disponibles de una hora
@@ -153,23 +152,24 @@ def available_slots():
         while current_time + timedelta(hours=1) <= end_dt:
             next_time = current_time + timedelta(hours=1)
 
-            # Verificar si el bloque actual está ocupado por algún evento
-            is_free = True
-            for busy_start, busy_end in busy_times:
-                if max(busy_start, current_time) < min(busy_end, next_time):
-                    is_free = False
-                    break
-
             # Convertir horas a string para comparación
             current_time_str = current_time.strftime('%H:%M')
             next_time_str = next_time.strftime('%H:%M')
 
-            # Si el horario está libre y coincide con tus horarios, lo agregamos a los disponibles
-            if is_free and (current_time_str, next_time_str) in working_hours:
-                available_slots.append({
-                    'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
-                })
+            # Verificar si el bloque de tiempo coincide con los horarios de trabajo y no está ocupado
+            if (current_time_str, next_time_str) in working_hours:
+                is_free = True
+                for busy_start, busy_end in busy_times:
+                    # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
+                    if max(busy_start, current_time) < min(busy_end, next_time):
+                        is_free = False
+                        break
+
+                if is_free:
+                    available_slots.append({
+                        'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                        'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
+                    })
 
             current_time = next_time
 
@@ -183,6 +183,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 
