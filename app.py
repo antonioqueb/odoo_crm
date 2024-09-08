@@ -29,9 +29,7 @@ def create_opportunity():
         stage_id = data.get('stage_id')  # Etapa de la oportunidad (opcional)
         expected_revenue = data.get('expected_revenue')  # Ingresos esperados
         probability = data.get('probability')  # Probabilidad de éxito
-        campaign_id = data.get('campaign_id')  # ID de la campaña de marketing
-        source_id = data.get('source_id')  # Fuente del lead
-        medium_id = data.get('medium_id')  # Medio de marketing
+        company_id = data.get('company_id')  # ID de la empresa (multiempresa)
 
         # Crear oportunidad en el modelo 'crm.lead'
         opportunity_id = models.execute_kw(
@@ -42,9 +40,7 @@ def create_opportunity():
                 'stage_id': stage_id,
                 'expected_revenue': expected_revenue,
                 'probability': probability,
-                'campaign_id': campaign_id,
-                'source_id': source_id,
-                'medium_id': medium_id,
+                'company_id': company_id,  # Asignación de la empresa
             }]
         )
 
