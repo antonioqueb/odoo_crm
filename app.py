@@ -33,6 +33,8 @@ def create_opportunity():
         expected_revenue = data.get('expected_revenue')  # Ingresos esperados
         probability = data.get('probability')  # Probabilidad de éxito
         company_id = data.get('company_id')  # ID de la empresa (multiempresa)
+        start_time = data.get('start_time')  # Hora de inicio para el evento en el calendario
+        end_time = data.get('end_time')  # Hora de fin para el evento en el calendario
 
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
@@ -56,42 +58,36 @@ def create_opportunity():
             }]
         )
 
-        # Verificar disponibilidad en el calendario y crear un evento
-        start_date = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
-        end_date = start_date + timedelta(hours=1)
+        # Crear un evento en el calendario para el rango de horas especificado
+        event_data = {
+            'name': f'Consultoría para {partner_name}',
+            'start': start_time,
+            'stop': end_time,
+            'user_id': user_id,
+            'partner_ids': [(6, 0, [partner_id])],
+            'company_id': company_id,
+        }
         
-        # Verificar que el bloque de tiempo esté libre
-        calendar_events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [[
-                ['start', '<=', end_date.isoformat()],
-                ['stop', '>=', start_date.isoformat()]
-            ]],
-            {'fields': ['start', 'stop']}
+        # Validar que no exista ya un evento en el mismo rango de horas
+        events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_count', [[
+                ('start', '<=', end_time),
+                ('stop', '>=', start_time),
+                ('user_id', '=', user_id),
+            ]]
         )
 
-        if calendar_events:
+        if events == 0:
+            models.execute_kw(db, uid, password, 'calendar.event', 'create', [event_data])
+        else:
             return jsonify({
                 'status': 'error',
-                'message': 'El bloque de tiempo ya está ocupado.'
-            }), 409
-
-        # Crear el evento en el calendario
-        event_id = models.execute_kw(
-            db, uid, password, 'calendar.event', 'create', [{
-                'name': f'Consulta con {partner_name}',
-                'start': start_date.isoformat(),
-                'stop': end_date.isoformat(),
-                'partner_ids': [(4, partner_id)],  # Relacionar con el cliente
-                'allday': False,
-                'user_id': user_id,
-                'company_id': company_id,
-            }]
-        )
+                'message': 'Este horario ya está reservado para otro evento.'
+            }), 400
 
         return jsonify({
             'status': 'success',
-            'opportunity_id': opportunity_id,
-            'calendar_event_id': event_id
+            'opportunity_id': opportunity_id
         }), 201
 
     except Exception as e:
