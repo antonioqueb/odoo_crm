@@ -40,6 +40,7 @@ def create_opportunity():
         start_time = data.get('start_time')  # Hora de inicio para el evento en el calendario
         end_time = data.get('end_time')  # Hora de fin para el evento en el calendario
         phone = data.get('phone')  # Agregamos el teléfono
+
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
             partner_id = models.execute_kw(
