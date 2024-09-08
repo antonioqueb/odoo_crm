@@ -121,6 +121,9 @@ def available_slots():
         start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
         end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
+        # Obtener la hora actual en la zona horaria de México
+        now = datetime.now(mexico_tz)
+
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
             ("10:00", "11:00"),
@@ -169,7 +172,8 @@ def available_slots():
                         is_free = False
                         break
 
-                if is_free:
+                # Verificar si el bloque de tiempo está en el futuro
+                if is_free and current_time > now:
                     available_slots.append({
                         'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
                         'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
@@ -187,6 +191,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
