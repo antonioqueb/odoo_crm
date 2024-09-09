@@ -23,8 +23,7 @@ uid = common.authenticate(db, username, password, {})
 
 models = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/object')
 
-# Zona horaria de UTC para sincronización con Odoo
-utc_tz = pytz.UTC
+# Zona horaria de la Ciudad de México
 mexico_tz = pytz.timezone('America/Mexico_City')
 
 @app.route('/create_opportunity', methods=['POST'])
@@ -61,11 +60,11 @@ def create_opportunity():
                 }]
             )
 
-        # Convertir las fechas locales a UTC antes de enviarlas a Odoo
+        # Convertir las fechas a UTC antes de enviarlas a Odoo
         start_time_local = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S'))
         end_time_local = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S'))
-        start_time_utc = start_time_local.astimezone(utc_tz)
-        end_time_utc = end_time_local.astimezone(utc_tz)
+        start_time_utc = start_time_local.astimezone(pytz.utc)
+        end_time_utc = end_time_local.astimezone(pytz.utc)
 
         # Crear la oportunidad en el modelo 'crm.lead'
         print(f"Creando oportunidad en Odoo con los siguientes datos: name={name}, partner_id={partner_id}, user_id={user_id}, stage_id={stage_id}, expected_revenue={expected_revenue}, probability={probability}, company_id={company_id}, phone={phone}")
@@ -133,7 +132,7 @@ def create_opportunity():
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-        # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
+       # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
@@ -142,23 +141,23 @@ def available_slots():
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
 
-        # Convertir las fechas de string a objetos datetime y convertirlas a UTC
-        start_dt = utc_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
-        end_dt = utc_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+        # Convertir las fechas de string a objetos datetime en la zona horaria de México
+        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
-        # Obtener la hora actual en UTC
-        now = datetime.now(utc_tz)
+        # Obtener la hora actual en la zona horaria de México
+        now = datetime.now(mexico_tz)
 
-        # Horarios disponibles que te interesan (horas en UTC)
+        # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
+            ("10:00", "11:00"),
+            ("13:00", "14:00"),
+            ("14:00", "15:00"),
+            ("15:00", "16:00"),
             ("16:00", "17:00"),
-            ("19:00", "20:00"),
-            ("20:00", "21:00"),
-            ("21:00", "22:00"),
-            ("22:00", "23:00"),
-            ("23:00", "00:00"),
-            ("00:00", "01:00"),
-            ("01:00", "02:00")
+            ("17:00", "18:00"),
+            ("18:00", "19:00"),
+            ("19:00", "20:00")
         ]
 
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
@@ -175,9 +174,9 @@ def available_slots():
         print(f"Eventos obtenidos de Odoo: {events}")
         sys.stdout.flush()
 
-        # Convertir los eventos a UTC para las comparaciones
-        busy_times = [(utc_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
-                       utc_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
+        # Verificar que los eventos tienen el company_id correcto
+        busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
+                       mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
                       for event in events if event['company_id'][0] == company_id]
 
         # Ordenar los tiempos ocupados por su inicio
