@@ -117,9 +117,9 @@ def available_slots():
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
 
-        # Convertir las fechas de string a objetos datetime en la zona horaria de México
-        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
-        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+        start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
+        end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
+
 
         # Obtener la hora actual en la zona horaria de México
         now = datetime.now(mexico_tz)
