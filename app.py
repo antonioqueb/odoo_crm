@@ -60,6 +60,12 @@ def create_opportunity():
                 }]
             )
 
+        # Convertir las fechas a UTC antes de enviarlas a Odoo
+        start_time_local = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S'))
+        end_time_local = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S'))
+        start_time_utc = start_time_local.astimezone(pytz.utc)
+        end_time_utc = end_time_local.astimezone(pytz.utc)
+
         # Crear la oportunidad en el modelo 'crm.lead'
         print(f"Creando oportunidad en Odoo con los siguientes datos: name={name}, partner_id={partner_id}, user_id={user_id}, stage_id={stage_id}, expected_revenue={expected_revenue}, probability={probability}, company_id={company_id}, phone={phone}")
         sys.stdout.flush()
@@ -81,22 +87,22 @@ def create_opportunity():
         # Crear un evento en el calendario para el rango de horas especificado
         event_data = {
             'name': f'Consultoría para {partner_name}',
-            'start': start_time,
-            'stop': end_time,
+            'start': start_time_utc.strftime('%Y-%m-%d %H:%M:%S'),
+            'stop': end_time_utc.strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'partner_ids': [(6, 0, [partner_id])],
             'company_id': company_id,  # Asignación de la empresa al evento
         }
 
-        # Imprimir las fechas antes de enviarlas a Odoo
-        print(f"Enviando fechas a Odoo: start={start_time}, stop={end_time}")
+        # Imprimir las fechas en UTC antes de enviarlas a Odoo
+        print(f"Enviando fechas a Odoo en UTC: start={start_time_utc}, stop={end_time_utc}")
         sys.stdout.flush()
 
         # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
-                ('start', '<=', end_time),
-                ('stop', '>=', start_time),
+                ('start', '<=', end_time_utc.strftime('%Y-%m-%d %H:%M:%S')),
+                ('stop', '>=', start_time_utc.strftime('%Y-%m-%d %H:%M:%S')),
                 ('user_id', '=', user_id),
                 ('company_id', '=', company_id),  # Filtrar por la misma empresa
             ]]
