@@ -87,9 +87,11 @@ def create_opportunity():
             'partner_ids': [(6, 0, [partner_id])],
             'company_id': company_id,  # Asignación de la empresa al evento
         }
-        print(f"Datos del evento a crear en Odoo: {event_data}")
+
+        # Imprimir las fechas antes de enviarlas a Odoo
+        print(f"Enviando fechas a Odoo: start={start_time}, stop={end_time}")
         sys.stdout.flush()
-        
+
         # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
