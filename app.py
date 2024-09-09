@@ -163,8 +163,8 @@ def available_slots():
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
-                ('start', '>=', start_time),
-                ('stop', '<=', end_time),
+                ('start', '<=', end_time),
+                ('stop', '>=', start_time),
                 ('company_id', '=', company_id),  # Filtrar por company_id
                 ('user_id', '=', user_id),        # Filtrar por user_id
             ]],
@@ -175,8 +175,8 @@ def available_slots():
         sys.stdout.flush()
 
         # Verificar que los eventos tienen el company_id correcto
-        busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')), 
-                       mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S'))) 
+        busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
+                       mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
                       for event in events if event['company_id'][0] == company_id]
 
         # Ordenar los tiempos ocupados por su inicio
