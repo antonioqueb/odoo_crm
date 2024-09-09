@@ -30,7 +30,8 @@ def create_opportunity():
     try:
         # Extraer datos del cuerpo de la solicitud
         data = request.json
-        print("Datos recibidos en create_opportunity:", data)
+        print(f"Datos recibidos para crear oportunidad: {data}")
+
 
         # Parámetros para crear una oportunidad
         name = data.get('name')
@@ -48,6 +49,7 @@ def create_opportunity():
 
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
+            print(f"Creando partner en Odoo con los siguientes datos: name={partner_name}, email={partner_email}, phone={phone}")
             partner_id = models.execute_kw(
                 db, uid, password, 'res.partner', 'create', [{
                     'name': partner_name,
@@ -56,7 +58,9 @@ def create_opportunity():
                 }]
             )
 
+
         # Crear la oportunidad en el modelo 'crm.lead'
+        print(f"Creando oportunidad en Odoo con los siguientes datos: name={name}, partner_id={partner_id}, user_id={user_id}, stage_id={stage_id}, expected_revenue={expected_revenue}, probability={probability}, company_id={company_id}, phone={phone}")
         opportunity_id = models.execute_kw(
             db, uid, password, 'crm.lead', 'create', [{
                 'name': name,
@@ -69,6 +73,8 @@ def create_opportunity():
                 'phone': phone,
             }]
         )
+        print(f"Oportunidad creada en Odoo con ID: {opportunity_id}")
+
 
         # Crear un evento en el calendario para el rango de horas especificado
         event_data = {
@@ -79,7 +85,8 @@ def create_opportunity():
             'partner_ids': [(6, 0, [partner_id])],
             'company_id': company_id,  # Asignación de la empresa al evento
         }
-         print("Datos del evento a crear en Odoo:", event_data)        
+        print(f"Datos del evento a crear en Odoo: {event_data}")
+        
         # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
@@ -112,14 +119,19 @@ def create_opportunity():
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-        # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
+       # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
+        print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
+
+        
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
 
-        start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
-        end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
+        # Convertir las fechas de string a objetos datetime en la zona horaria de México
+        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+
 
 
         # Obtener la hora actual en la zona horaria de México
@@ -147,6 +159,8 @@ def available_slots():
             ]],
             {'fields': ['start', 'stop', 'company_id']}
         )
+
+
 
         # Verificar que los eventos tienen el company_id correcto
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')), 
