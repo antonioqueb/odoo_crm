@@ -30,6 +30,7 @@ def create_opportunity():
     try:
         # Extraer datos del cuerpo de la solicitud
         data = request.json
+        print("Datos recibidos en create_opportunity:", data)
 
         # Parámetros para crear una oportunidad
         name = data.get('name')
@@ -47,26 +48,30 @@ def create_opportunity():
 
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
+            partner_data = {
+                'name': partner_name,
+                'email': partner_email,
+                'phone': phone
+            }
+            print("Creando nuevo partner con datos:", partner_data)
             partner_id = models.execute_kw(
-                db, uid, password, 'res.partner', 'create', [{
-                    'name': partner_name,
-                    'email': partner_email,
-                    'phone': phone,  
-                }]
+                db, uid, password, 'res.partner', 'create', [partner_data]
             )
 
         # Crear la oportunidad en el modelo 'crm.lead'
+        opportunity_data = {
+            'name': name,
+            'partner_id': partner_id,
+            'user_id': user_id,
+            'stage_id': stage_id,
+            'expected_revenue': expected_revenue,
+            'probability': probability,
+            'company_id': company_id,  # Asignación de la empresa
+            'phone': phone
+        }
+        print("Enviando datos de oportunidad a Odoo:", opportunity_data)
         opportunity_id = models.execute_kw(
-            db, uid, password, 'crm.lead', 'create', [{
-                'name': name,
-                'partner_id': partner_id,
-                'user_id': user_id,
-                'stage_id': stage_id,
-                'expected_revenue': expected_revenue,
-                'probability': probability,
-                'company_id': company_id,  # Asignación de la empresa
-                'phone': phone,
-            }]
+            db, uid, password, 'crm.lead', 'create', [opportunity_data]
         )
 
         # Crear un evento en el calendario para el rango de horas especificado
@@ -78,6 +83,7 @@ def create_opportunity():
             'partner_ids': [(6, 0, [partner_id])],
             'company_id': company_id,  # Asignación de la empresa al evento
         }
+        print("Datos del evento a crear en Odoo:", event_data)
         
         # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
@@ -92,6 +98,7 @@ def create_opportunity():
         if events == 0:
             models.execute_kw(db, uid, password, 'calendar.event', 'create', [event_data])
         else:
+            print("Error: Este horario ya está reservado para otro evento.")
             return jsonify({
                 'status': 'error',
                 'message': 'Este horario ya está reservado para otro evento en la misma empresa.'
@@ -103,10 +110,12 @@ def create_opportunity():
         }), 201
 
     except Exception as e:
+        print("Error al crear la oportunidad:", str(e))
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
@@ -119,7 +128,6 @@ def available_slots():
 
         start_dt = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
         end_dt = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S')
-
 
         # Obtener la hora actual en la zona horaria de México
         now = datetime.now(mexico_tz)
@@ -194,8 +202,6 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
