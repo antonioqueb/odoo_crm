@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 import pytz  # Biblioteca para manejo de zonas horarias
 from flask_cors import CORS
+import sys  # Para asegurar que los prints se descarguen de inmediato
 
 app = Flask(__name__)
 
@@ -31,7 +32,7 @@ def create_opportunity():
         # Extraer datos del cuerpo de la solicitud
         data = request.json
         print(f"Datos recibidos para crear oportunidad: {data}")
-
+        sys.stdout.flush()
 
         # Parámetros para crear una oportunidad
         name = data.get('name')
@@ -50,6 +51,7 @@ def create_opportunity():
         # Si no existe partner_id, crear el partner
         if not partner_id and partner_name and partner_email:
             print(f"Creando partner en Odoo con los siguientes datos: name={partner_name}, email={partner_email}, phone={phone}")
+            sys.stdout.flush()
             partner_id = models.execute_kw(
                 db, uid, password, 'res.partner', 'create', [{
                     'name': partner_name,
@@ -58,9 +60,9 @@ def create_opportunity():
                 }]
             )
 
-
         # Crear la oportunidad en el modelo 'crm.lead'
         print(f"Creando oportunidad en Odoo con los siguientes datos: name={name}, partner_id={partner_id}, user_id={user_id}, stage_id={stage_id}, expected_revenue={expected_revenue}, probability={probability}, company_id={company_id}, phone={phone}")
+        sys.stdout.flush()
         opportunity_id = models.execute_kw(
             db, uid, password, 'crm.lead', 'create', [{
                 'name': name,
@@ -74,7 +76,7 @@ def create_opportunity():
             }]
         )
         print(f"Oportunidad creada en Odoo con ID: {opportunity_id}")
-
+        sys.stdout.flush()
 
         # Crear un evento en el calendario para el rango de horas especificado
         event_data = {
@@ -86,6 +88,7 @@ def create_opportunity():
             'company_id': company_id,  # Asignación de la empresa al evento
         }
         print(f"Datos del evento a crear en Odoo: {event_data}")
+        sys.stdout.flush()
         
         # Validar que no exista ya un evento en el mismo rango de horas para la misma empresa
         events = models.execute_kw(
@@ -111,6 +114,8 @@ def create_opportunity():
         }), 201
 
     except Exception as e:
+        print(f"Error en create_opportunity: {str(e)}")
+        sys.stdout.flush()
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -123,7 +128,7 @@ def available_slots():
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
-
+        sys.stdout.flush()
         
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
@@ -131,8 +136,6 @@ def available_slots():
         # Convertir las fechas de string a objetos datetime en la zona horaria de México
         start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
         end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
-
-
 
         # Obtener la hora actual en la zona horaria de México
         now = datetime.now(mexico_tz)
@@ -160,7 +163,8 @@ def available_slots():
             {'fields': ['start', 'stop', 'company_id']}
         )
 
-
+        print(f"Eventos obtenidos de Odoo: {events}")
+        sys.stdout.flush()
 
         # Verificar que los eventos tienen el company_id correcto
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')), 
@@ -205,12 +209,12 @@ def available_slots():
         }), 200
 
     except Exception as e:
+        print(f"Error en available_slots: {str(e)}")
+        sys.stdout.flush()
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
