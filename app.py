@@ -198,6 +198,11 @@ def available_slots():
         # Ordenar los tiempos ocupados por su inicio
         busy_times.sort()
 
+        # Imprimir los eventos ocupados
+        for busy_start, busy_end in busy_times:
+            print(f"Evento ocupado: start={busy_start}, end={busy_end}")
+        sys.stdout.flush()
+
         # Definir bloques de tiempo disponibles de una hora
         available_slots = []
         current_time = start_dt
@@ -212,14 +217,18 @@ def available_slots():
             # Verificar si el bloque de tiempo coincide con los horarios de trabajo
             if (current_time_str, next_time_str) in working_hours:
                 is_free = True
+                print(f"Comprobando bloque: {current_time} - {next_time}")
                 for busy_start, busy_end in busy_times:
                     # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
+                    print(f"Comparando con evento: {busy_start} - {busy_end}")
                     if max(busy_start, current_time) < min(busy_end, next_time):
                         is_free = False
+                        print(f"Solapamiento detectado con el evento: {busy_start} - {busy_end}")
                         break
 
                 # Verificar si el bloque de tiempo está en el futuro
                 if is_free and current_time > now:
+                    print(f"Bloque disponible: {current_time} - {next_time}")
                     available_slots.append({
                         'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
                         'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
@@ -239,6 +248,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
