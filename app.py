@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pytz  # Biblioteca para manejo de zonas horarias
 from flask_cors import CORS
 import sys  # Para asegurar que los prints se descarguen de inmediato
+from event_service import fetch_events  # Importar la función separada
 
 app = Flask(__name__)
 
@@ -141,12 +142,8 @@ def available_slots():
         company_id = int(request.args.get('company_id'))
         user_id = int(request.args.get('user_id'))
 
-        # Convertir las fechas de string a objetos datetime en la zona horaria de México
-        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
-        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
-
-        # Obtener la hora actual en la zona horaria de México
-        now = datetime.now(mexico_tz)
+        # Obtener los eventos usando la función separada
+        busy_times = fetch_events(models, db, uid, password, start_time, end_time, company_id, user_id, mexico_tz)
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
@@ -176,45 +173,10 @@ def available_slots():
             ("23:00", "00:00")
         ]
 
-        # Imprimir información de consulta específica
-        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}, user_id = {user_id}")
-        sys.stdout.flush()
-
-        # Buscar eventos en el calendario para la empresa y usuario específicos en el rango de tiempo dado
-        events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [[
-                ('start', '<=', end_time),
-                ('stop', '>=', start_time),
-                ('company_id', '=', company_id),
-                ('user_id', '=', user_id),
-            ]],
-            {'fields': ['start', 'stop']}
-        )
-
-        print(f"Eventos obtenidos de Odoo (con filtros): {events}")
-        sys.stdout.flush()
-
-        # Si no se obtienen eventos, imprimir un mensaje para depuración
-        if not events:
-            print(f"No se encontraron eventos para el usuario {user_id} y la empresa {company_id} en el rango {start_time} - {end_time}")
-            sys.stdout.flush()
-
-        # Convertir los eventos a tiempos ocupados en la zona horaria de México
-        busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
-                       mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
-                      for event in events]
-
-        # Ordenar los tiempos ocupados por su inicio
-        busy_times.sort()
-
-        # Imprimir los eventos ocupados
-        for busy_start, busy_end in busy_times:
-            print(f"Evento ocupado: start={busy_start}, end={busy_end}")
-        sys.stdout.flush()
-
         # Definir bloques de tiempo disponibles de una hora
         available_slots = []
-        current_time = start_dt
+        current_time = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
         while current_time + timedelta(hours=1) <= end_dt:
             next_time = current_time + timedelta(hours=1)
@@ -230,14 +192,13 @@ def available_slots():
                 for busy_start, busy_end in busy_times:
                     # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
                     print(f"Comparando con evento: {busy_start} - {busy_end}")
-                    # Aquí corregimos para asegurar que se comparen correctamente los tiempos
                     if busy_start < next_time and busy_end > current_time:
                         is_free = False
                         print(f"Solapamiento detectado con el evento: {busy_start} - {busy_end}")
                         break
 
                 # Verificar si el bloque de tiempo está en el futuro
-                if is_free and current_time > now:
+                if is_free and current_time > datetime.now(mexico_tz):
                     print(f"Bloque disponible: {current_time} - {next_time}")
                     available_slots.append({
                         'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
@@ -258,8 +219,6 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
