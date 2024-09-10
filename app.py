@@ -180,14 +180,6 @@ def available_slots():
         print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}, user_id = {user_id}")
         sys.stdout.flush()
 
-        # Obtener todos los eventos sin filtros
-        all_events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [[]],
-            {'fields': ['start', 'stop', 'user_id', 'company_id']}
-        )
-        print(f"Todos los eventos obtenidos de Odoo (sin filtros): {all_events}")
-        sys.stdout.flush()
-
         # Buscar eventos en el calendario para la empresa y usuario específicos en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
@@ -238,7 +230,8 @@ def available_slots():
                 for busy_start, busy_end in busy_times:
                     # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
                     print(f"Comparando con evento: {busy_start} - {busy_end}")
-                    if max(busy_start, current_time) < min(busy_end, next_time):
+                    # Aquí corregimos para asegurar que se comparen correctamente los tiempos
+                    if busy_start < next_time and busy_end > current_time:
                         is_free = False
                         print(f"Solapamiento detectado con el evento: {busy_start} - {busy_end}")
                         break
@@ -265,6 +258,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
