@@ -1,6 +1,3 @@
-import sys
-from datetime import datetime
-
 def fetch_events(models, db, uid, password, start_time, end_time, mexico_tz):
     """
     Obtiene los eventos desde Odoo en el rango de fechas dado,
@@ -35,6 +32,10 @@ def fetch_events(models, db, uid, password, start_time, end_time, mexico_tz):
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
                        mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
                       for event in events]
+
+        # Imprimir todos los eventos con sus detalles
+        for event in events:
+            print(f"Evento: {event['name']} | Inicio: {event['start']} | Fin: {event['stop']}")
 
         return busy_times, events  # Retornamos los tiempos ocupados y los eventos completos para mayor flexibilidad
 
