@@ -6,8 +6,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from flask import Flask
 from flask_cors import CORS
-from app.routes.opportunity import opportunity_blueprint
-from app.routes.calendar import calendar_blueprint
+from app.app.routes.opportunity import opportunity_blueprint
+from app.app.routes.calendar import calendar_blueprint
 
 def create_app():
     app = Flask(__name__)
