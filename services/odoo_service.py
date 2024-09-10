@@ -1,7 +1,7 @@
 from config import models, db, uid, password
-from utils.time_utils import local_to_utc
+from app.utils.time_utils import local_to_utc
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 
 mexico_tz = pytz.timezone('America/Mexico_City')
 
@@ -18,8 +18,7 @@ def create_opportunity_in_odoo(data):
     phone = data.get('phone')
     start_time = data.get('start_time')
     end_time = data.get('end_time')
-    
-    # Crear partner si no existe
+
     if not partner_id and partner_name and partner_email:
         partner_id = models.execute_kw(
             db, uid, password, 'res.partner', 'create', [{
@@ -29,11 +28,9 @@ def create_opportunity_in_odoo(data):
             }]
         )
 
-    # Convertir las horas locales a UTC
     start_time_utc = local_to_utc(start_time)
     end_time_utc = local_to_utc(end_time)
 
-    # Crear la oportunidad en Odoo
     opportunity_id = models.execute_kw(
         db, uid, password, 'crm.lead', 'create', [{
             'name': name,
@@ -47,7 +44,6 @@ def create_opportunity_in_odoo(data):
         }]
     )
 
-    # Crear un evento relacionado si no hay solapamiento
     events = models.execute_kw(
         db, uid, password, 'calendar.event', 'search_count', [[
             ('start', '<=', end_time_utc.strftime('%Y-%m-%d %H:%M:%S')),
@@ -68,9 +64,65 @@ def create_opportunity_in_odoo(data):
     return opportunity_id
 
 def get_available_slots(start_time, end_time, company_id):
-    # Implementación completa para obtener slots disponibles
-    pass
+    start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+    end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+
+    events = models.execute_kw(
+        db, uid, password, 'calendar.event', 'search_read', [[
+            ('start', '<=', end_dt.strftime('%Y-%m-%d %H:%M:%S')),
+            ('stop', '>=', start_dt.strftime('%Y-%m-%d %H:%M:%S')),
+            ('company_id', '=', int(company_id))
+        ]],
+        {'fields': ['start', 'stop']}
+    )
+
+    busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
+                   mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
+                  for event in events]
+
+    available_slots = []
+    current_time = start_dt
+
+    while current_time + timedelta(hours=1) <= end_dt:
+        next_time = current_time + timedelta(hours=1)
+        is_free = True
+
+        for busy_start, busy_end in busy_times:
+            if not (next_time <= busy_start or current_time >= busy_end):
+                is_free = False
+                break
+
+        if is_free and current_time > datetime.now(mexico_tz):
+            available_slots.append({
+                'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'stop': next_time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        current_time = next_time
+
+    return available_slots
 
 def get_events(start_time, end_time, company_id):
-    # Implementación completa para obtener eventos desde Odoo
-    pass
+    start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+    end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+
+    events = models.execute_kw(
+        db, uid, password, 'calendar.event', 'search_read', [[
+            ('start', '<=', end_dt.strftime('%Y-%m-%d %H:%M:%S')),
+            ('stop', '>=', start_dt.strftime('%Y-%m-%d %H:%M:%S')),
+            ('company_id', '=', int(company_id))
+        ]],
+        {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids']}
+    )
+
+    for event in events:
+        event_start_utc = datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')
+        event_stop_utc = datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')
+
+        event_start_mx = pytz.utc.localize(event_start_utc).astimezone(mexico_tz)
+        event_stop_mx = pytz.utc.localize(event_stop_utc).astimezone(mexico_tz)
+
+        event['start'] = event_start_mx.strftime('%Y-%m-%d %H:%M:%S')
+        event['stop'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
+
+    return events

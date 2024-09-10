@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.odoo_service import get_available_slots, get_events
+from app.services.odoo_service import get_available_slots, get_events
 import sys
 
 calendar_blueprint = Blueprint('calendar', __name__)
@@ -25,6 +25,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 @calendar_blueprint.route('/events', methods=['GET'])
 def events():

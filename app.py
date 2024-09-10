@@ -1,14 +1,12 @@
 import sys
 import os
 
-# Añadir la ruta principal del proyecto al sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from flask import Flask
 from flask_cors import CORS
 from routes.opportunity import opportunity_blueprint
 from routes.calendar import calendar_blueprint
-
 
 def create_app():
     app = Flask(__name__)
