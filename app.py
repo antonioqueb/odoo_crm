@@ -143,8 +143,8 @@ def available_slots():
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
         sys.stdout.flush()
 
-        # Obtener los eventos y los tiempos ocupados usando la función separada, sin company_id
-        busy_times, events = fetch_events(models, db, uid, password, start_time, end_time, mexico_tz)
+        # Obtener los eventos y los tiempos ocupados usando la función separada
+        busy_times, _ = fetch_events(models, db, uid, password, start_time, end_time, mexico_tz)
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
@@ -190,11 +190,11 @@ def available_slots():
             if (current_time_str, next_time_str) in working_hours:
                 is_free = True
                 print(f"Comprobando bloque: {current_time} - {next_time}")
-                
+
                 for busy_start, busy_end in busy_times:
                     # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
                     print(f"Comparando con evento: {busy_start} - {busy_end}")
-                    
+
                     # Ajustar la lógica para detectar si hay solapamiento
                     if not (next_time <= busy_start or current_time >= busy_end):
                         is_free = False
@@ -211,11 +211,10 @@ def available_slots():
 
             current_time = next_time
 
-        # Devolver los bloques disponibles junto con los eventos obtenidos
+        # Devolver los bloques disponibles sin los eventos
         return jsonify({
             'status': 'success',
-            'available_slots': available_slots,
-            'events': events  # Devolver también los eventos completos para depuración o futura referencia
+            'available_slots': available_slots
         }), 200
 
     except Exception as e:
@@ -225,7 +224,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
-    
+
 
 @app.route('/events', methods=['GET'])
 def get_events():
