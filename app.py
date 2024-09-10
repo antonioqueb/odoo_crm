@@ -132,7 +132,7 @@ def create_opportunity():
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-       # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
+        # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
@@ -176,7 +176,6 @@ def available_slots():
             ("23:00", "00:00")
         ]
 
-
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
@@ -185,16 +184,16 @@ def available_slots():
                 ('company_id', '=', company_id),  # Filtrar por company_id
                 ('user_id', '=', user_id),        # Filtrar por user_id
             ]],
-            {'fields': ['start', 'stop', 'company_id']}
+            {'fields': ['start', 'stop']}
         )
 
         print(f"Eventos obtenidos de Odoo: {events}")
         sys.stdout.flush()
 
-        # Verificar que los eventos tienen el company_id correcto
+        # Convertir los eventos a tiempos ocupados en la zona horaria de México
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
                        mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
-                      for event in events if event['company_id'][0] == company_id]
+                      for event in events]
 
         # Ordenar los tiempos ocupados por su inicio
         busy_times.sort()
@@ -210,7 +209,7 @@ def available_slots():
             current_time_str = current_time.strftime('%H:%M')
             next_time_str = next_time.strftime('%H:%M')
 
-            # Verificar si el bloque de tiempo coincide con los horarios de trabajo y no está ocupado
+            # Verificar si el bloque de tiempo coincide con los horarios de trabajo
             if (current_time_str, next_time_str) in working_hours:
                 is_free = True
                 for busy_start, busy_end in busy_times:
@@ -240,6 +239,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
