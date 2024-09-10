@@ -1,3 +1,6 @@
+import sys
+from datetime import datetime
+
 def fetch_events(models, db, uid, password, start_time, end_time, mexico_tz):
     """
     Obtiene los eventos desde Odoo en el rango de fechas dado,
