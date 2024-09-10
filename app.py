@@ -128,6 +128,7 @@ def available_slots():
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}, company_id={company_id}")
         sys.stdout.flush()
 
+        # Hacer una solicitud HTTP al endpoint de eventos para obtener los eventos ocupados
         event_api_url = f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         response = requests.get(event_api_url)
 
@@ -137,6 +138,8 @@ def available_slots():
         events_data = response.json()
 
         busy_times = [(event['start'], event['stop']) for event in events_data['events']]
+        
+        # Convertir los tiempos ocupados a objetos datetime en la zona horaria de México
         busy_times = [(mexico_tz.localize(datetime.strptime(start, '%Y-%m-%d %H:%M:%S')),
                        mexico_tz.localize(datetime.strptime(stop, '%Y-%m-%d %H:%M:%S')))
                       for start, stop in busy_times]
@@ -209,6 +212,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 @app.route('/events', methods=['GET'])
 def get_events():
