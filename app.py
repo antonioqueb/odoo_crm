@@ -176,11 +176,19 @@ def available_slots():
             ("23:00", "00:00")
         ]
 
-        # Imprimir información de consulta
+        # Imprimir información de consulta específica
         print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}, user_id = {user_id}")
         sys.stdout.flush()
 
-        # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
+        # Obtener todos los eventos sin filtros
+        all_events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_read', [[]],
+            {'fields': ['start', 'stop', 'user_id', 'company_id']}
+        )
+        print(f"Todos los eventos obtenidos de Odoo (sin filtros): {all_events}")
+        sys.stdout.flush()
+
+        # Buscar eventos en el calendario para la empresa y usuario específicos en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time),
@@ -191,7 +199,7 @@ def available_slots():
             {'fields': ['start', 'stop']}
         )
 
-        print(f"Eventos obtenidos de Odoo: {events}")
+        print(f"Eventos obtenidos de Odoo (con filtros): {events}")
         sys.stdout.flush()
 
         # Si no se obtienen eventos, imprimir un mensaje para depuración
@@ -257,7 +265,6 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
-
 
 
 if __name__ == '__main__':
