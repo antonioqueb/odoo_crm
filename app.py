@@ -190,6 +190,7 @@ def available_slots():
             if (current_time_str, next_time_str) in working_hours:
                 is_free = True
                 print(f"Comprobando bloque: {current_time} - {next_time}")
+                
                 for busy_start, busy_end in busy_times:
                     # Verificar si hay solapamiento entre el bloque de tiempo actual y algún evento ocupado
                     print(f"Comparando con evento: {busy_start} - {busy_end}")
@@ -199,7 +200,6 @@ def available_slots():
                         is_free = False
                         print(f"Solapamiento detectado con el evento: {busy_start} - {busy_end}")
                         break
-
 
                 # Verificar si el bloque de tiempo está en el futuro
                 if is_free and current_time > datetime.now(mexico_tz):
