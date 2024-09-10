@@ -130,27 +130,25 @@ def create_opportunity():
             'message': str(e)
         }), 500
 
+
+
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-        # Obtener parámetros de consulta (rango de fechas y empresa)
+        # Obtener parámetros de consulta (rango de fechas)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
-        company_id = request.args.get('company_id')
 
-        # Verificar que todos los parámetros necesarios estén presentes
-        if not start_time or not end_time or not company_id:
-            raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
+        # Verificar que los parámetros de fecha estén presentes
+        if not start_time or not end_time:
+            raise ValueError("Los parámetros start_time y end_time son obligatorios.")
 
         # Imprimir las fechas recibidas
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
         sys.stdout.flush()
 
-        # Convertir company_id a entero
-        company_id = int(company_id)
-
-        # Obtener los eventos y los tiempos ocupados usando la función separada
-        busy_times, events = fetch_events(models, db, uid, password, start_time, end_time, company_id, mexico_tz)
+        # Obtener los eventos y los tiempos ocupados usando la función separada, ya no filtramos por company_id o user_id
+        busy_times, events = fetch_events(models, db, uid, password, start_time, end_time, mexico_tz)
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
