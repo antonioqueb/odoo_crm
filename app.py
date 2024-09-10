@@ -228,11 +228,11 @@ def get_events():
 
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
-                ('end', '<=', end_time),
-                ('start', '>=', start_time),
+                ('start', '<=', end_time),
+                ('stop', '>=', start_time),
                 ('company_id', '=', int(company_id))
             ]],
-            {'fields': ['id', 'name', 'start', 'end', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
+            {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
 
         print(f"Eventos obtenidos de Odoo: {events}")
@@ -244,9 +244,9 @@ def get_events():
 
             event_start_mx = pytz.utc.localize(event_start_utc).astimezone(mexico_tz)
             event_stop_mx = pytz.utc.localize(event_stop_utc).astimezone(mexico_tz)
-
+            
+            event['end'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
             event['start'] = event_start_mx.strftime('%Y-%m-%d %H:%M:%S')
-            event['stop'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
 
         return jsonify({
             'status': 'success',
