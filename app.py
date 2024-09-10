@@ -128,6 +128,8 @@ def create_opportunity():
             'message': str(e)
         }), 500
 
+import requests
+
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
@@ -144,8 +146,22 @@ def available_slots():
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}, company_id={company_id}")
         sys.stdout.flush()
 
-        # Obtener los eventos y los tiempos ocupados para la compañía dada
-        busy_times, _ = fetch_events(models, db, uid, password, start_time, end_time, mexico_tz)
+        # Hacer una solicitud HTTP al endpoint de eventos para obtener los eventos ocupados
+        event_api_url = f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+        response = requests.get(event_api_url)
+
+        if response.status_code != 200:
+            raise Exception(f"Error al consultar la API de eventos: {response.text}")
+
+        events_data = response.json()
+
+        # Obtener los tiempos ocupados desde la respuesta de la API
+        busy_times = [(event['start'], event['stop']) for event in events_data['events']]
+
+        # Convertir los tiempos ocupados a objetos datetime en la zona horaria de México
+        busy_times = [(mexico_tz.localize(datetime.strptime(start, '%Y-%m-%d %H:%M:%S')),
+                       mexico_tz.localize(datetime.strptime(stop, '%Y-%m-%d %H:%M:%S')))
+                      for start, stop in busy_times]
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
