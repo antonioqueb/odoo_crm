@@ -133,17 +133,24 @@ def create_opportunity():
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     try:
-        # Obtener parámetros de consulta (rango de fechas, empresa y usuario)
+        # Obtener parámetros de consulta (rango de fechas y empresa)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
+        company_id = request.args.get('company_id')
+
+        # Verificar que todos los parámetros necesarios estén presentes
+        if not start_time or not end_time or not company_id:
+            raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
+
+        # Imprimir las fechas recibidas
         print(f"Fechas recibidas: start_time={start_time}, end_time={end_time}")
         sys.stdout.flush()
-        
-        company_id = int(request.args.get('company_id'))
-        user_id = int(request.args.get('user_id'))
 
-        # Obtener los eventos usando la función separada
-        busy_times = fetch_events(models, db, uid, password, start_time, end_time, company_id, user_id, mexico_tz)
+        # Convertir company_id a entero
+        company_id = int(company_id)
+
+        # Obtener los eventos y los tiempos ocupados usando la función separada
+        busy_times, events = fetch_events(models, db, uid, password, start_time, end_time, company_id, mexico_tz)
 
         # Horarios disponibles que te interesan (horas fijas que quieres aceptar)
         working_hours = [
@@ -207,9 +214,11 @@ def available_slots():
 
             current_time = next_time
 
+        # Devolver los bloques disponibles junto con los eventos obtenidos
         return jsonify({
             'status': 'success',
-            'available_slots': available_slots
+            'available_slots': available_slots,
+            'events': events  # Devolver también los eventos completos para depuración o futura referencia
         }), 200
 
     except Exception as e:
@@ -219,6 +228,7 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
