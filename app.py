@@ -257,6 +257,20 @@ def get_events():
         print(f"Eventos obtenidos de Odoo: {events}")
         sys.stdout.flush()
 
+        # Convertir las horas de UTC a la zona horaria de México
+        for event in events:
+            # Convertir las horas 'start' y 'stop' a datetime y luego ajustar la zona horaria a Ciudad de México
+            event_start_utc = datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')
+            event_stop_utc = datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')
+
+            # Convertir UTC a la zona horaria de Ciudad de México
+            event_start_mx = pytz.utc.localize(event_start_utc).astimezone(mexico_tz)
+            event_stop_mx = pytz.utc.localize(event_stop_utc).astimezone(mexico_tz)
+
+            # Actualizar los valores en el evento
+            event['start'] = event_start_mx.strftime('%Y-%m-%d %H:%M:%S')
+            event['stop'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
+
         return jsonify({
             'status': 'success',
             'events': events
@@ -269,6 +283,7 @@ def get_events():
             'status': 'error',
             'message': str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
