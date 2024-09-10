@@ -228,11 +228,11 @@ def get_events():
 
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
-                ('start', '<=', end_time),
-                ('stop', '>=', start_time),
+                ('end', '<=', end_time),
+                ('start', '>=', start_time),
                 ('company_id', '=', int(company_id))
             ]],
-            {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
+            {'fields': ['id', 'name', 'start', 'end', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
 
         print(f"Eventos obtenidos de Odoo: {events}")
