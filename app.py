@@ -176,19 +176,28 @@ def available_slots():
             ("23:00", "00:00")
         ]
 
+        # Imprimir información de consulta
+        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}, user_id = {user_id}")
+        sys.stdout.flush()
+
         # Buscar eventos en el calendario para la empresa específica en el rango de tiempo dado
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time),
                 ('stop', '>=', start_time),
-                ('company_id', '=', company_id),  # Filtrar por company_id
-                ('user_id', '=', user_id),        # Filtrar por user_id
+                ('company_id', '=', company_id),
+                ('user_id', '=', user_id),
             ]],
             {'fields': ['start', 'stop']}
         )
 
         print(f"Eventos obtenidos de Odoo: {events}")
         sys.stdout.flush()
+
+        # Si no se obtienen eventos, imprimir un mensaje para depuración
+        if not events:
+            print(f"No se encontraron eventos para el usuario {user_id} y la empresa {company_id} en el rango {start_time} - {end_time}")
+            sys.stdout.flush()
 
         # Convertir los eventos a tiempos ocupados en la zona horaria de México
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
