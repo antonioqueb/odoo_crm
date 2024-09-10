@@ -244,9 +244,9 @@ def get_events():
 
             event_start_mx = pytz.utc.localize(event_start_utc).astimezone(mexico_tz)
             event_stop_mx = pytz.utc.localize(event_stop_utc).astimezone(mexico_tz)
-            
-            event['end'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
+
             event['start'] = event_start_mx.strftime('%Y-%m-%d %H:%M:%S')
+            event['stop'] = event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
 
         return jsonify({
             'status': 'success',
