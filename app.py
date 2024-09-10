@@ -103,9 +103,7 @@ def create_opportunity():
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
                 ('start', '<=', end_time_utc.strftime('%Y-%m-%d %H:%M:%S')),
-                ('stop', '>=', start_time_utc.strftime('%Y-%m-%d %H:%M:%S')),
-                ('user_id', '=', user_id),
-                ('company_id', '=', company_id),  # Filtrar por la misma empresa
+                ('stop', '>=', start_time_utc.strftime('%Y-%m-%d %H:%M:%S'))
             ]]
         )
 
