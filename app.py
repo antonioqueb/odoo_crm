@@ -225,6 +225,51 @@ def available_slots():
             'status': 'error',
             'message': str(e)
         }), 500
+    
+
+@app.route('/events', methods=['GET'])
+def get_events():
+    try:
+        # Obtener parámetros de consulta (rango de fechas)
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+
+        # Verificar que todos los parámetros necesarios estén presentes
+        if not start_time or not end_time:
+            raise ValueError("Los parámetros start_time y end_time son obligatorios.")
+
+        # Convertir las fechas de string a objetos datetime en la zona horaria de México
+        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+
+        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}")
+        sys.stdout.flush()
+
+        # Buscar eventos en el calendario filtrando solo por rango de fechas
+        events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_read', [[
+                ('start', '<=', end_time),
+                ('stop', '>=', start_time),
+            ]],
+            {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
+        )
+
+        print(f"Eventos obtenidos de Odoo: {events}")
+        sys.stdout.flush()
+
+        return jsonify({
+            'status': 'success',
+            'events': events
+        }), 200
+
+    except Exception as e:
+        print(f"Error al obtener eventos: {str(e)}")
+        sys.stdout.flush()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
