@@ -3,7 +3,8 @@ from datetime import datetime
 
 def fetch_events(models, db, uid, password, start_time, end_time, company_id, mexico_tz):
     """
-    Obtiene los eventos desde Odoo para una empresa específica en el rango de fechas dado.
+    Obtiene los eventos desde Odoo para una empresa específica en el rango de fechas dado,
+    incluyendo más propiedades del evento.
     """
     try:
         # Convertir las fechas de string a objetos datetime en la zona horaria de México
@@ -13,14 +14,14 @@ def fetch_events(models, db, uid, password, start_time, end_time, company_id, me
         print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}")
         sys.stdout.flush()
 
-        # Buscar eventos en el calendario filtrando por empresa
+        # Buscar eventos en el calendario filtrando por empresa y añadiendo más campos
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time),
                 ('stop', '>=', start_time),
                 ('company_id', '=', company_id),
             ]],
-            {'fields': ['start', 'stop']}
+            {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
 
         print(f"Eventos obtenidos de Odoo: {events}")
@@ -36,7 +37,7 @@ def fetch_events(models, db, uid, password, start_time, end_time, company_id, me
                        mexico_tz.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')))
                       for event in events]
 
-        return busy_times
+        return busy_times, events  # Retornamos los tiempos ocupados y los eventos completos para mayor flexibilidad
 
     except Exception as e:
         # Manejar errores en la obtención de eventos
