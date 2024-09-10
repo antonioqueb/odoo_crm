@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.services.odoo_service import get_available_slots, get_events
+from services.odoo_service import get_available_slots, get_events
 import sys
 
 calendar_blueprint = Blueprint('calendar', __name__)
