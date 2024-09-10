@@ -195,7 +195,7 @@ def available_slots():
                     print(f"Bloque disponible: {current_time} - {next_time}")
                     available_slots.append({
                         'start': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                        'end': next_time.strftime('%Y-%m-%d %H:%M:%S')
+                        'stop': next_time.strftime('%Y-%m-%d %H:%M:%S')  # Cambié 'end' por 'stop'
                     })
 
             current_time = next_time
