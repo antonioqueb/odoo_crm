@@ -1,23 +1,35 @@
 import sys
 from datetime import datetime
 
-def fetch_events(models, db, uid, password, mexico_tz):
+def fetch_events(models, db, uid, password, start_time, end_time, company_id, mexico_tz):
     """
-    Obtiene todos los eventos desde Odoo y los imprime sin filtrar.
+    Obtiene los eventos desde Odoo para una empresa específica en el rango de fechas dado.
     """
     try:
-        print("Consultando todos los eventos de Odoo...")
+        # Convertir las fechas de string a objetos datetime en la zona horaria de México
+        start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
+        end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
+
+        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id = {company_id}")
         sys.stdout.flush()
 
-        # Buscar todos los eventos en el calendario
+        # Buscar eventos en el calendario filtrando por empresa
         events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [[]],  # Sin filtros
-            {'fields': ['name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description']}
+            db, uid, password, 'calendar.event', 'search_read', [[
+                ('start', '<=', end_time),
+                ('stop', '>=', start_time),
+                ('company_id', '=', company_id),
+            ]],
+            {'fields': ['start', 'stop']}
         )
 
-        # Imprimir todos los eventos con todas sus propiedades
-        print(f"Todos los eventos obtenidos de Odoo: {events}")
+        print(f"Eventos obtenidos de Odoo: {events}")
         sys.stdout.flush()
+
+        # Verificar si no hay eventos
+        if not events:
+            print(f"No se encontraron eventos para la empresa {company_id} en el rango {start_time} - {end_time}")
+            sys.stdout.flush()
 
         # Convertir los eventos a objetos datetime
         busy_times = [(mexico_tz.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')),
