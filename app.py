@@ -229,26 +229,28 @@ def available_slots():
 @app.route('/events', methods=['GET'])
 def get_events():
     try:
-        # Obtener parámetros de consulta (rango de fechas)
+        # Obtener parámetros de consulta (rango de fechas y company_id)
         start_time = request.args.get('start_time')
         end_time = request.args.get('end_time')
+        company_id = request.args.get('company_id')
 
         # Verificar que todos los parámetros necesarios estén presentes
-        if not start_time or not end_time:
-            raise ValueError("Los parámetros start_time y end_time son obligatorios.")
+        if not start_time or not end_time or not company_id:
+            raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
 
         # Convertir las fechas de string a objetos datetime en la zona horaria de México
         start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
         end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
-        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}")
+        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id={company_id}")
         sys.stdout.flush()
 
-        # Buscar eventos en el calendario filtrando solo por rango de fechas
+        # Buscar eventos en el calendario filtrando por rango de fechas y company_id
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time),
                 ('stop', '>=', start_time),
+                ('company_id', '=', int(company_id))  # Filtrar por company_id
             ]],
             {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
@@ -282,7 +284,6 @@ def get_events():
             'status': 'error',
             'message': str(e)
         }), 500
-
 
 
 if __name__ == '__main__':
