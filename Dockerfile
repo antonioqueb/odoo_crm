@@ -2,7 +2,7 @@
 FROM python:3.9-slim
 
 # Establece el directorio de trabajo en el contenedor
-WORKDIR /app
+WORKDIR /apps
 
 # Copia el archivo de requerimientos al contenedor
 COPY requirements.txt .
