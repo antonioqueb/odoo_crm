@@ -2,11 +2,14 @@ from flask import jsonify, request
 from datetime import datetime
 import pytz
 import traceback
+import sys
 
 def create_opportunity(models, db, uid, password, mexico_tz):
     try:
         data = request.json
-        print(f"Datos recibidos: {data}")  # Depuración
+        print(f"Datos recibidos en la API: {data}")  # Verificar datos recibidos
+        sys.stdout.flush()  # Asegurar que el log se imprime inmediatamente
+        
         required_fields = ['name', 'partner_id', 'partner_name', 'partner_email', 'user_id', 'stage_id', 'expected_revenue', 'probability', 'company_id', 'start_time', 'end_time', 'phone']
         
         # Verificar campos faltantes
@@ -26,6 +29,8 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         try:
             start_time_utc, end_time_utc = (mexico_tz.localize(datetime.strptime(t, '%Y-%m-%d %H:%M:%S')).astimezone(pytz.utc) for t in [start_time, end_time])
         except ValueError as e:
+            print(f"Error en la conversión de fechas: {str(e)}")
+            sys.stdout.flush()  # Asegurar que el log se imprime inmediatamente
             return jsonify({'status': 'error', 'message': f'Error en la conversión de fechas: {str(e)}'}), 400
 
         # Crear la oportunidad
@@ -33,6 +38,8 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             'name': name, 'partner_id': partner_id, 'user_id': user_id, 'stage_id': stage_id, 'expected_revenue': expected_revenue, 'probability': probability, 'company_id': company_id, 'phone': phone
         }])
         if not opportunity_id:
+            print("Error al crear la oportunidad.")
+            sys.stdout.flush()  # Asegurar que el log se imprime inmediatamente
             return jsonify({'status': 'error', 'message': 'Error al crear la oportunidad.'}), 500
 
         # Crear el evento del calendario
@@ -49,10 +56,13 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         if events == 0:
             models.execute_kw(db, uid, password, 'calendar.event', 'create', [event_data])
         else:
+            print("Este horario ya está reservado para otro evento.")
+            sys.stdout.flush()  # Asegurar que el log se imprime inmediatamente
             return jsonify({'status': 'error', 'message': 'Este horario ya está reservado para otro evento en la misma empresa.'}), 400
 
         return jsonify({'status': 'success', 'opportunity_id': opportunity_id}), 201
 
     except Exception as e:
         print(f"Error: {traceback.format_exc()}")  # Depuración del error
+        sys.stdout.flush()  # Asegurar que el log se imprime inmediatamente
         return jsonify({'status': 'error', 'message': str(e)}), 500
