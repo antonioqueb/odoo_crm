@@ -1,11 +1,6 @@
-import os
-import xmlrpc.client
-import pytz
+import os, xmlrpc.client, pytz
 
-odoo_url = os.getenv('ODOO_URL')
-db = os.getenv('ODOO_DB')
-username = os.getenv('ODOO_USERNAME')
-password = os.getenv('ODOO_PASSWORD')
+odoo_url, db, username, password = (os.getenv(k) for k in ['ODOO_URL', 'ODOO_DB', 'ODOO_USERNAME', 'ODOO_PASSWORD'])
 
 common = xmlrpc.client.ServerProxy(f'{odoo_url}/xmlrpc/2/common')
 uid = common.authenticate(db, username, password, {})

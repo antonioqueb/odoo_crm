@@ -8,17 +8,14 @@ from opportunity import create_opportunity
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://inventario-plus.gestpro.cloud"}})
 
-@app.route('/create_opportunity', methods=['POST'])
-def opportunity():
-    return create_opportunity(models, db, uid, password, mexico_tz)
+routes = [
+    ('/create_opportunity', 'POST', create_opportunity),
+    ('/available_slots', 'GET', available_slots),
+    ('/events', 'GET', get_events)
+]
 
-@app.route('/available_slots', methods=['GET'])
-def slots():
-    return available_slots(models, db, uid, password, mexico_tz)
-
-@app.route('/events', methods=['GET'])
-def events():
-    return get_events(models, db, uid, password, mexico_tz)
+for route, method, func in routes:
+    app.route(route, methods=[method])(lambda func=func: func(models, db, uid, password, mexico_tz))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
