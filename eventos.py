@@ -13,11 +13,10 @@ def get_events(models, db, uid, password, mexico_tz):
         start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
         end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
-        # Consulta en la base de datos de eventos
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time), ('stop', '>=', start_time), ('company_id', '=', int(company_id))
-            ]], {'fields': ['start', 'stop']}  # Solo recuperamos los campos necesarios
+            ]], {'fields': ['start', 'stop']} 
         )
 
         if not isinstance(events, list):
