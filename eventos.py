@@ -17,12 +17,17 @@ def get_events(models, db, uid, password, mexico_tz):
             ]], {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
 
+        formatted_events = []
         for event in events:
             event_start_mx = pytz.utc.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
             event_stop_mx = pytz.utc.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
-            event.update({'start': event_start_mx.strftime('%Y-%m-%d %H:%M:%S'), 'stop': event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')})
+            
+            formatted_events.append({
+                "start": event_start_mx.strftime('%Y-%m-%d %H:%M:%S'),
+                "stop": event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
+            })
 
-        return jsonify({'status': 'success', 'events': events}), 200
+        return jsonify(formatted_events), 200
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
