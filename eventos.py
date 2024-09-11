@@ -14,7 +14,7 @@ def get_events(models, db, uid, password, mexico_tz):
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time), ('stop', '>=', start_time), ('company_id', '=', int(company_id))
-            ]], {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
+            ]], {'fields': ['start', 'stop', 'user_id']}
         )
 
         for event in events:
