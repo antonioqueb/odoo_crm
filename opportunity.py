@@ -15,7 +15,7 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         required_fields = ['name', 'partner_id', 'partner_name', 'partner_email', 'user_id', 'stage_id', 'expected_revenue', 'probability', 'company_id', 'start_time', 'end_time', 'phone']
         
         # Verificar si faltan campos requeridos
-        missing_fields = [f for f in required_fields if not data.get(f)]
+        missing_fields = [f for f in required_fields if not data.get(f) and f != 'partner_id']  # 'partner_id' puede faltar
         if missing_fields:
             print(f"Faltan los siguientes campos: {', '.join(missing_fields)}")
             sys.stdout.flush()
@@ -29,6 +29,7 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             print("Intentando crear el partner...")
             sys.stdout.flush()
             try:
+                # Crear el nuevo partner si no existe
                 partner_id = models.execute_kw(db, uid, password, 'res.partner', 'create', [{'name': partner_name, 'email': partner_email, 'phone': phone}])
                 print(f"Partner creado con ID: {partner_id}")
             except Exception as e:
@@ -54,6 +55,11 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             }])
             print(f"Oportunidad creada con ID: {opportunity_id}")
             sys.stdout.flush()
+
+            if not opportunity_id:
+                print(f"Error: La creación de la oportunidad devolvió un valor nulo.")
+                sys.stdout.flush()
+                return jsonify({'status': 'error', 'message': 'Error al crear la oportunidad.'}), 500
         except Exception as e:
             print(f"Error al crear la oportunidad: {str(e)}")
             sys.stdout.flush()
