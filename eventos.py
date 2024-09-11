@@ -19,18 +19,24 @@ def get_events(models, db, uid, password, mexico_tz):
                 ('start', '<=', end_time), ('stop', '>=', start_time), ('company_id', '=', int(company_id))
             ]], {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
+
+        if not isinstance(events, list):
+            raise ValueError("La respuesta de 'search_read' no es una lista.")
         
         # Formateo de eventos
         formatted_events = []
         for event in events:
-            event_start_mx = pytz.utc.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
-            event_stop_mx = pytz.utc.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
-            
-            formatted_events.append({
-                "start": event_start_mx.strftime('%Y-%m-%d %H:%M:%S'),
-                "stop": event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
-            })
-
+            if isinstance(event, dict):
+                event_start_mx = pytz.utc.localize(datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
+                event_stop_mx = pytz.utc.localize(datetime.strptime(event['stop'], '%Y-%m-%d %H:%M:%S')).astimezone(mexico_tz)
+                
+                formatted_events.append({
+                    "start": event_start_mx.strftime('%Y-%m-%d %H:%M:%S'),
+                    "stop": event_stop_mx.strftime('%Y-%m-%d %H:%M:%S')
+                })
+            else:
+                logging.error(f"El evento no es un diccionario: {event}")
+        
         return jsonify(formatted_events), 200
 
     except Exception as e:
