@@ -12,9 +12,9 @@ def available_slots():
         end_time = request.args.get('end_time')
         company_id = request.args.get('company_id')
 
-        # Convertir las horas locales a UTC antes de pasar a Odoo
-        start_time_utc = local_to_utc(start_time)
-        end_time_utc = local_to_utc(end_time)
+        # Convertir las horas locales a UTC solo si son cadenas
+        start_time_utc = local_to_utc(start_time) if isinstance(start_time, str) else start_time
+        end_time_utc = local_to_utc(end_time) if isinstance(end_time, str) else end_time
 
         available_slots = get_available_slots(start_time_utc, end_time_utc, company_id)
 
