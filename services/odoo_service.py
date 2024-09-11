@@ -1,5 +1,5 @@
 from config import models, db, uid, password
-from app.utils.time_utils import local_to_utc
+from utils.time_utils import local_to_utc
 import pytz
 from datetime import datetime
 

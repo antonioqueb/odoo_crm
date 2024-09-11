@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.services.odoo_service import create_opportunity_in_odoo
-from app.utils.time_utils import local_to_utc
+from services.odoo_service import create_opportunity_in_odoo
+from utils.time_utils import local_to_utc
 import sys
 
 opportunity_blueprint = Blueprint('opportunity', __name__)
