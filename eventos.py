@@ -1,9 +1,6 @@
-# eventos.py
-
 from flask import jsonify, request
 from datetime import datetime
 import pytz
-import sys
 
 def get_events(models, db, uid, password, mexico_tz):
     try:
@@ -17,9 +14,6 @@ def get_events(models, db, uid, password, mexico_tz):
         start_dt = mexico_tz.localize(datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S'))
         end_dt = mexico_tz.localize(datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%S'))
 
-        print(f"Consultando eventos de Odoo con: start_time <= {end_time}, stop >= {start_time}, company_id={company_id}")
-        sys.stdout.flush()
-
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_time),
@@ -28,9 +22,6 @@ def get_events(models, db, uid, password, mexico_tz):
             ]],
             {'fields': ['id', 'name', 'start', 'stop', 'company_id', 'user_id', 'partner_ids', 'description', 'allday', 'location']}
         )
-
-        print(f"Eventos obtenidos de Odoo: {events}")
-        sys.stdout.flush()
 
         for event in events:
             event_start_utc = datetime.strptime(event['start'], '%Y-%m-%d %H:%M:%S')
@@ -48,8 +39,6 @@ def get_events(models, db, uid, password, mexico_tz):
         }), 200
 
     except Exception as e:
-        print(f"Error al obtener eventos: {str(e)}")
-        sys.stdout.flush()
         return jsonify({
             'status': 'error',
             'message': str(e)

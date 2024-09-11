@@ -1,15 +1,10 @@
-# opportunity.py
-
 from flask import jsonify, request
 from datetime import datetime
-import sys
 import pytz
 
 def create_opportunity(models, db, uid, password, mexico_tz):
     try:
         data = request.json
-        print(f"Datos recibidos para crear oportunidad: {data}")
-        sys.stdout.flush()
 
         name = data.get('name')
         partner_id = data.get('partner_id')
@@ -25,8 +20,6 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         phone = data.get('phone')
 
         if not partner_id and partner_name and partner_email:
-            print(f"Creando partner en Odoo con los siguientes datos: name={partner_name}, email={partner_email}, phone={phone}")
-            sys.stdout.flush()
             partner_id = models.execute_kw(
                 db, uid, password, 'res.partner', 'create', [{
                     'name': partner_name,
@@ -40,8 +33,6 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         start_time_utc = start_time_local.astimezone(pytz.utc)
         end_time_utc = end_time_local.astimezone(pytz.utc)
 
-        print(f"Creando oportunidad en Odoo con los siguientes datos: name={name}, partner_id={partner_id}, user_id={user_id}, stage_id={stage_id}, expected_revenue={expected_revenue}, probability={probability}, company_id={company_id}, phone={phone}")
-        sys.stdout.flush()
         opportunity_id = models.execute_kw(
             db, uid, password, 'crm.lead', 'create', [{
                 'name': name,
@@ -54,8 +45,6 @@ def create_opportunity(models, db, uid, password, mexico_tz):
                 'phone': phone,
             }]
         )
-        print(f"Oportunidad creada en Odoo con ID: {opportunity_id}")
-        sys.stdout.flush()
 
         event_data = {
             'name': f'Consultoría para {partner_name}',
@@ -65,9 +54,6 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             'partner_ids': [(6, 0, [partner_id])],
             'company_id': company_id,
         }
-
-        print(f"Enviando fechas a Odoo en UTC: start={start_time_utc}, stop={end_time_utc}")
-        sys.stdout.flush()
 
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_count', [[
@@ -90,8 +76,6 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         }), 201
 
     except Exception as e:
-        print(f"Error en create_opportunity: {str(e)}")
-        sys.stdout.flush()
         return jsonify({
             'status': 'error',
             'message': str(e)
