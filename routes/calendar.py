@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.odoo_service import get_available_slots, get_events
+from app.utils.time_utils import local_to_utc
 import sys
 
 calendar_blueprint = Blueprint('calendar', __name__)
@@ -11,7 +12,11 @@ def available_slots():
         end_time = request.args.get('end_time')
         company_id = request.args.get('company_id')
 
-        available_slots = get_available_slots(start_time, end_time, company_id)
+        # Convertir las horas locales a UTC antes de pasar a Odoo
+        start_time_utc = local_to_utc(start_time)
+        end_time_utc = local_to_utc(end_time)
+
+        available_slots = get_available_slots(start_time_utc, end_time_utc, company_id)
 
         return jsonify({
             'status': 'success',
@@ -26,7 +31,6 @@ def available_slots():
             'message': str(e)
         }), 500
 
-
 @calendar_blueprint.route('/events', methods=['GET'])
 def events():
     try:
@@ -34,7 +38,11 @@ def events():
         end_time = request.args.get('end_time')
         company_id = request.args.get('company_id')
 
-        events = get_events(start_time, end_time, company_id)
+        # Convertir las horas locales a UTC antes de pasar a Odoo
+        start_time_utc = local_to_utc(start_time)
+        end_time_utc = local_to_utc(end_time)
+
+        events = get_events(start_time_utc, end_time_utc, company_id)
 
         return jsonify({
             'status': 'success',

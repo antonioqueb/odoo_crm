@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from services.odoo_service import create_opportunity_in_odoo
+from app.services.odoo_service import create_opportunity_in_odoo
+from app.utils.time_utils import local_to_utc
 import sys
 
 opportunity_blueprint = Blueprint('opportunity', __name__)
@@ -10,6 +11,12 @@ def create_opportunity():
         data = request.json
         print(f"Datos recibidos para crear oportunidad: {data}")
         sys.stdout.flush()
+
+        # Convertir las horas locales a UTC antes de pasar a Odoo
+        if 'start_time' in data:
+            data['start_time'] = local_to_utc(data['start_time'])
+        if 'end_time' in data:
+            data['end_time'] = local_to_utc(data['end_time'])
 
         # Llamar al servicio que crea la oportunidad en Odoo
         opportunity_id = create_opportunity_in_odoo(data)
