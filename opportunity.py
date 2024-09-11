@@ -38,6 +38,10 @@ def create_opportunity(models, db, uid, password, mexico_tz):
                 return jsonify({'status': 'error', 'message': f'Error al crear el partner: {str(e)}'}), 500
             sys.stdout.flush()
 
+        # Ajustar el formato de las fechas (reemplazar 'T' por espacio)
+        start_time = start_time.replace('T', ' ')
+        end_time = end_time.replace('T', ' ')
+
         # Convertir los tiempos a UTC
         try:
             start_time_utc, end_time_utc = (mexico_tz.localize(datetime.strptime(t, '%Y-%m-%d %H:%M:%S')).astimezone(pytz.utc) for t in [start_time, end_time])
