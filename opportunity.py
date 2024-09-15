@@ -58,7 +58,7 @@ def create_opportunity(models, db, uid, password, mexico_tz):
                 return jsonify({'status': 'error', 'message': f'Error al crear el partner: {str(e)}'}), 500
             sys.stdout.flush()
 
-        # Ajustar el formato de las fechas (asegurar el sufijo 'Z')
+        # Ajustar el formato de las fechas (quitar la 'Z')
         start_time = start_time.replace('Z', '')
         end_time = end_time.replace('Z', '')
 
@@ -112,11 +112,11 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             sys.stdout.flush()
             return jsonify({'status': 'error', 'message': f'Error al crear la oportunidad: {str(e)}'}), 500
 
-        # Preparar datos del evento de calendario con sufijo 'Z'
+        # Preparar datos del evento de calendario (sin 'Z')
         event_data = {
             'name': f'Consultoría para {partner_name}', 
-            'start': start_time_utc.strftime('%Y-%m-%dT%H:%M:%SZ'), 
-            'stop': end_time_utc.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'start': start_time_utc.strftime('%Y-%m-%dT%H:%M:%S'),  # Quitar la 'Z'
+            'stop': end_time_utc.strftime('%Y-%m-%dT%H:%M:%S'),  # Quitar la 'Z'
             'user_id': user_id, 
             'partner_ids': [(6, 0, [partner_id])], 
             'company_id': company_id
@@ -125,8 +125,8 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         # Comprobar si el evento ya está reservado
         try:
             events = models.execute_kw(db, uid, password, 'calendar.event', 'search_count', [[
-                ('start', '<=', end_time_utc.strftime('%Y-%m-%dT%H:%M:%SZ')), 
-                ('stop', '>=', start_time_utc.strftime('%Y-%m-%dT%H:%M:%SZ'))
+                ('start', '<=', end_time_utc.strftime('%Y-%m-%dT%H:%M:%S')), 
+                ('stop', '>=', start_time_utc.strftime('%Y-%m-%dT%H:%M:%S'))
             ]])
             print(f"Eventos coincidentes encontrados: {events}")
             sys.stdout.flush()

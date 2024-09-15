@@ -1,4 +1,3 @@
-# slots.py
 from flask import jsonify, request
 from datetime import datetime, timedelta
 import requests
@@ -70,9 +69,9 @@ def available_slots(models, db, uid, password, mexico_tz):
                 all(next_time <= b[0] or current_time >= b[1] for b in busy_times) and 
                 current_time > datetime.now(mexico_tz)
             ):
-                # Convertir a UTC con sufijo 'Z' para mantener consistencia
-                slot_start_utc = current_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-                slot_stop_utc = next_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                # Convertir a UTC sin el sufijo 'Z'
+                slot_start_utc = current_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S')  # Sin 'Z'
+                slot_stop_utc = next_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S')  # Sin 'Z'
                 available_slots.append({'start': slot_start_utc, 'stop': slot_stop_utc})
 
             current_time = next_time

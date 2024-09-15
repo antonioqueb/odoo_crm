@@ -1,4 +1,3 @@
-# eventos.py
 from flask import jsonify, request
 from datetime import datetime
 import pytz
@@ -45,7 +44,7 @@ def get_events(models, db, uid, password, mexico_tz):
             ]], {'fields': ['start', 'stop']}
         )
 
-        # Convertir fechas de eventos a UTC con el sufijo 'Z'
+        # Convertir fechas de eventos a UTC sin el sufijo 'Z'
         for event in events:
             event_start = parser.isoparse(event['start'])
             event_stop = parser.isoparse(event['stop'])
@@ -61,9 +60,10 @@ def get_events(models, db, uid, password, mexico_tz):
             else:
                 event_stop = event_stop.astimezone(pytz.utc)
 
+            # Actualizar las fechas sin el sufijo 'Z'
             event.update({
-                'start': event_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'stop': event_stop.strftime('%Y-%m-%dT%H:%M:%SZ')
+                'start': event_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                'stop': event_stop.strftime('%Y-%m-%dT%H:%M:%S')
             })
 
         return jsonify({'status': 'success', 'events': events}), 200

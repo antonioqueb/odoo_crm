@@ -1,4 +1,3 @@
-# free_slots.py
 from flask import jsonify, request
 from datetime import datetime
 import requests
@@ -77,8 +76,8 @@ def free_slots(models, db, uid, password, mexico_tz):
                     break
             if not overlap:
                 free_slots.append({
-                    'start': slot_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'stop': slot_stop.strftime('%Y-%m-%dT%H:%M:%SZ')
+                    'start': slot_start.strftime('%Y-%m-%dT%H:%M:%S'),  # Quitar la 'Z'
+                    'stop': slot_stop.strftime('%Y-%m-%dT%H:%M:%S')  # Quitar la 'Z'
                 })
 
         return jsonify({'status': 'success', 'free_slots': free_slots}), 200
