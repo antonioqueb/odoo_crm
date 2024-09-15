@@ -1,3 +1,4 @@
+# app.py
 from flask import Flask
 from flask_cors import CORS
 from config import models, db, uid, password, mexico_tz
@@ -17,7 +18,12 @@ def register_routes():
         ('/free_slots', 'GET', free_slots, 'free_slots')  
     ]
     for route, method, func, endpoint in routes:
-        app.add_url_rule(route, view_func=lambda func=func: func(models, db, uid, password, mexico_tz), methods=[method], endpoint=endpoint)
+        app.add_url_rule(
+            route, 
+            view_func=lambda func=func: func(models, db, uid, password, mexico_tz), 
+            methods=[method], 
+            endpoint=endpoint
+        )
 
 register_routes()
 

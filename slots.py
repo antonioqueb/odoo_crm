@@ -1,3 +1,4 @@
+# slots.py
 from flask import jsonify, request
 from datetime import datetime, timedelta
 import requests
@@ -5,29 +6,54 @@ import pytz
 
 def available_slots(models, db, uid, password, mexico_tz):
     try:
-        start_time, end_time, company_id = (request.args.get(k) for k in ['start_time', 'end_time', 'company_id'])
+        # Obtener parámetros de la solicitud
+        start_time, end_time, company_id = (
+            request.args.get(k) for k in ['start_time', 'end_time', 'company_id']
+        )
         if not all([start_time, end_time, company_id]):
             raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
 
-        event_api_url = f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+        # Consultar eventos programados desde la API de eventos
+        event_api_url = (
+            f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+        )
         response = requests.get(event_api_url)
         if response.status_code != 200:
             raise Exception(f"Error al consultar la API de eventos: {response.text}")
 
-        busy_times = [(mexico_tz.localize(datetime.strptime(e['start'], '%Y-%m-%d %H:%M:%S')),
-                       mexico_tz.localize(datetime.strptime(e['stop'], '%Y-%m-%d %H:%M:%S')))
-                      for e in response.json()['events']]
+        # Convertir eventos a objetos datetime en UTC y luego a la zona horaria de México
+        busy_times = [
+            (
+                pytz.utc.localize(datetime.strptime(e['start'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz),
+                pytz.utc.localize(datetime.strptime(e['stop'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz)
+            )
+            for e in response.json()['events']
+        ]
 
+        # Definir horas de trabajo (por ejemplo, 00:00 a 23:00)
         working_hours = [(f"{h:02}:00", f"{h+1:02}:00") for h in range(24)]
         available_slots = []
-        current_time, end_dt = (mexico_tz.localize(datetime.strptime(t, '%Y-%m-%dT%H:%M:%S')) for t in [start_time, end_time])
+
+        # Parsear tiempos de inicio y fin como UTC y convertir a la zona horaria de México
+        current_time, end_dt = (
+            pytz.utc.localize(datetime.strptime(t, '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz) 
+            for t in [start_time, end_time]
+        )
 
         while current_time + timedelta(hours=1) <= end_dt:
             next_time = current_time + timedelta(hours=1)
             time_slot = (current_time.strftime('%H:%M'), next_time.strftime('%H:%M'))
 
-            if time_slot in working_hours and all(next_time <= b[0] or current_time >= b[1] for b in busy_times) and current_time > datetime.now(mexico_tz):
-                available_slots.append({'start': current_time.strftime('%Y-%m-%d %H:%M:%S'), 'stop': next_time.strftime('%Y-%m-%d %H:%M:%S')})
+            # Verificar si el slot está dentro de las horas de trabajo y no está ocupado
+            if (
+                time_slot in working_hours and 
+                all(next_time <= b[0] or current_time >= b[1] for b in busy_times) and 
+                current_time > datetime.now(mexico_tz)
+            ):
+                # Convertir a UTC con sufijo 'Z' para mantener consistencia
+                slot_start_utc = current_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                slot_stop_utc = next_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                available_slots.append({'start': slot_start_utc, 'stop': slot_stop_utc})
 
             current_time = next_time
 
