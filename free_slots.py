@@ -3,7 +3,9 @@ from flask import jsonify, request
 from datetime import datetime
 import requests
 import pytz
+from dateutil import parser
 
+# Función que obtiene los slots libres restando los eventos ocupados
 def free_slots(models, db, uid, password, mexico_tz):
     try:
         # Obtener parámetros de la solicitud
@@ -13,7 +15,7 @@ def free_slots(models, db, uid, password, mexico_tz):
         if not all([start_time, end_time, company_id]):
             raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
 
-        # Consultar eventos programados
+        # Obtener los eventos programados
         event_api_url = (
             f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
@@ -22,7 +24,7 @@ def free_slots(models, db, uid, password, mexico_tz):
             raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
         events = event_response.json()['events']
 
-        # Consultar slots disponibles
+        # Obtener los slots disponibles
         slot_api_url = (
             f'https://crm.gestpro.cloud/available_slots?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
@@ -31,23 +33,49 @@ def free_slots(models, db, uid, password, mexico_tz):
             raise Exception(f"Error al consultar la API de slots: {slot_response.text}")
         slots = slot_response.json()['available_slots']
 
-        # Convertir eventos a objetos datetime en UTC
-        busy_times = [
-            (
-                pytz.utc.localize(datetime.strptime(e['start'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz),
-                pytz.utc.localize(datetime.strptime(e['stop'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz)
-            )
-            for e in events
-        ]
+        # Convertir los eventos en un formato manejable
+        busy_times = []
+        for e in events:
+            event_start = parser.isoparse(e['start'])
+            event_stop = parser.isoparse(e['stop'])
 
-        # Restar eventos de slots para obtener slots libres
+            # Asegurarse de que las fechas están en UTC
+            if event_start.tzinfo is None:
+                event_start = mexico_tz.localize(event_start).astimezone(pytz.utc)
+            else:
+                event_start = event_start.astimezone(pytz.utc)
+            
+            if event_stop.tzinfo is None:
+                event_stop = mexico_tz.localize(event_stop).astimezone(pytz.utc)
+            else:
+                event_stop = event_stop.astimezone(pytz.utc)
+
+            busy_times.append((event_start, event_stop))
+
+        # Convertir los slots a objetos datetime y restarlos de los tiempos ocupados
         free_slots = []
         for slot in slots:
-            slot_start = mexico_tz.localize(datetime.strptime(slot['start'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(pytz.utc)
-            slot_stop = mexico_tz.localize(datetime.strptime(slot['stop'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(pytz.utc)
+            slot_start = parser.isoparse(slot['start'])
+            slot_stop = parser.isoparse(slot['stop'])
+
+            # Asegurarse de que las fechas están en UTC
+            if slot_start.tzinfo is None:
+                slot_start = mexico_tz.localize(slot_start).astimezone(pytz.utc)
+            else:
+                slot_start = slot_start.astimezone(pytz.utc)
             
+            if slot_stop.tzinfo is None:
+                slot_stop = mexico_tz.localize(slot_stop).astimezone(pytz.utc)
+            else:
+                slot_stop = slot_stop.astimezone(pytz.utc)
+
             # Verificar solapamiento con eventos ocupados
-            if all(slot_stop <= event_start or slot_start >= event_stop for event_start, event_stop in busy_times):
+            overlap = False
+            for event_start, event_stop in busy_times:
+                if not (slot_stop <= event_start or slot_start >= event_stop):
+                    overlap = True
+                    break
+            if not overlap:
                 free_slots.append({
                     'start': slot_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
                     'stop': slot_stop.strftime('%Y-%m-%dT%H:%M:%SZ')

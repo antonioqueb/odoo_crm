@@ -3,6 +3,7 @@ from flask import jsonify, request
 from datetime import datetime, timedelta
 import requests
 import pytz
+from dateutil import parser
 
 def available_slots(models, db, uid, password, mexico_tz):
     try:
@@ -22,23 +23,42 @@ def available_slots(models, db, uid, password, mexico_tz):
             raise Exception(f"Error al consultar la API de eventos: {response.text}")
 
         # Convertir eventos a objetos datetime en UTC y luego a la zona horaria de México
-        busy_times = [
-            (
-                pytz.utc.localize(datetime.strptime(e['start'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz),
-                pytz.utc.localize(datetime.strptime(e['stop'], '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz)
-            )
-            for e in response.json()['events']
-        ]
+        busy_times = []
+        for e in response.json()['events']:
+            event_start = parser.isoparse(e['start'])
+            event_stop = parser.isoparse(e['stop'])
+
+            # Asegurarse de que las fechas están en UTC
+            if event_start.tzinfo is None:
+                event_start = mexico_tz.localize(event_start).astimezone(pytz.utc)
+            else:
+                event_start = event_start.astimezone(pytz.utc)
+            
+            if event_stop.tzinfo is None:
+                event_stop = mexico_tz.localize(event_stop).astimezone(pytz.utc)
+            else:
+                event_stop = event_stop.astimezone(pytz.utc)
+
+            busy_times.append((event_start, event_stop))
 
         # Definir horas de trabajo (por ejemplo, 00:00 a 23:00)
         working_hours = [(f"{h:02}:00", f"{h+1:02}:00") for h in range(24)]
         available_slots = []
 
         # Parsear tiempos de inicio y fin como UTC y convertir a la zona horaria de México
-        current_time, end_dt = (
-            pytz.utc.localize(datetime.strptime(t, '%Y-%m-%dT%H:%M:%SZ')).astimezone(mexico_tz) 
-            for t in [start_time, end_time]
-        )
+        current_time = parser.isoparse(start_time)
+        end_dt = parser.isoparse(end_time)
+
+        # Asegurarse de que las fechas están en UTC
+        if current_time.tzinfo is None:
+            current_time = pytz.utc.localize(current_time).astimezone(mexico_tz)
+        else:
+            current_time = current_time.astimezone(mexico_tz)
+        
+        if end_dt.tzinfo is None:
+            end_dt = pytz.utc.localize(end_dt).astimezone(mexico_tz)
+        else:
+            end_dt = end_dt.astimezone(mexico_tz)
 
         while current_time + timedelta(hours=1) <= end_dt:
             next_time = current_time + timedelta(hours=1)

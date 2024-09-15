@@ -1,9 +1,9 @@
-# opportunity.py
 from flask import jsonify, request
 from datetime import datetime
 import pytz
 import traceback
 import sys
+from dateutil import parser
 
 def create_opportunity(models, db, uid, password, mexico_tz):
     try:
@@ -27,11 +27,18 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             return jsonify({'status': 'error', 'message': f'Faltan los siguientes campos: {", ".join(missing_fields)}'}), 400
         
         # Desempaquetar datos
-        (
-            name, partner_id, partner_name, partner_email, user_id, 
-            stage_id, expected_revenue, probability, company_id, 
-            start_time, end_time, phone
-        ) = (data.get(f) for f in required_fields)
+        name = data.get('name')
+        partner_id = data.get('partner_id')
+        partner_name = data.get('partner_name')
+        partner_email = data.get('partner_email')
+        user_id = data.get('user_id')
+        stage_id = data.get('stage_id')
+        expected_revenue = data.get('expected_revenue')
+        probability = data.get('probability')
+        company_id = data.get('company_id')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        phone = data.get('phone')
 
         # Crear partner si no existe
         if not partner_id and partner_name and partner_email:
@@ -52,17 +59,28 @@ def create_opportunity(models, db, uid, password, mexico_tz):
             sys.stdout.flush()
 
         # Ajustar el formato de las fechas (asegurar el sufijo 'Z')
-        start_time = start_time.replace('T', ' ').replace('Z', '')
-        end_time = end_time.replace('T', ' ').replace('Z', '')
+        start_time = start_time.replace('Z', '')
+        end_time = end_time.replace('Z', '')
 
         # Convertir los tiempos a UTC
         try:
-            start_time_utc = mexico_tz.localize(
-                datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
-            ).astimezone(pytz.utc)
-            end_time_utc = mexico_tz.localize(
-                datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
-            ).astimezone(pytz.utc)
+            start_dt = parser.isoparse(start_time)
+            end_dt = parser.isoparse(end_time)
+
+            # Asegurarse de que las fechas están en la zona horaria de México
+            if start_dt.tzinfo is None:
+                start_dt = mexico_tz.localize(start_dt)
+            else:
+                start_dt = start_dt.astimezone(mexico_tz)
+            
+            if end_dt.tzinfo is None:
+                end_dt = mexico_tz.localize(end_dt)
+            else:
+                end_dt = end_dt.astimezone(mexico_tz)
+
+            # Convertir a UTC
+            start_time_utc = start_dt.astimezone(pytz.utc)
+            end_time_utc = end_dt.astimezone(pytz.utc)
             print(f"Fechas convertidas a UTC: {start_time_utc}, {end_time_utc}")
             sys.stdout.flush()
         except ValueError as e:

@@ -3,3 +3,4 @@ Werkzeug==2.0.3
 Flask-Cors==5.0.0
 pytz==2024.1
 requests==2.26.0
+python-dateutil==2.9.0.post0
