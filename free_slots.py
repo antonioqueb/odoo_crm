@@ -2,6 +2,8 @@ from flask import jsonify, request
 import requests
 import sys
 from dateutil import parser
+import pytz  # ** Importación de pytz **
+
 
 def free_slots(models, db, uid, password, mexico_tz):
     try:
