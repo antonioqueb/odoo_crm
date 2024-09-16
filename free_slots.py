@@ -46,11 +46,29 @@ def free_slots(models, db, uid, password, mexico_tz):
             slot_start = parser.isoparse(slot['start'])
             slot_stop = parser.isoparse(slot['stop'])
 
+            # Convertir las fechas de slot a UTC si no tienen zona horaria
+            if slot_start.tzinfo is None:
+                slot_start = slot_start.replace(tzinfo=pytz.UTC)
+            if slot_stop.tzinfo is None:
+                slot_stop = slot_stop.replace(tzinfo=pytz.UTC)
+
+            print(f"Comparando slot: {slot_start} - {slot_stop}")
+            sys.stdout.flush()
+
             # Verificar si el slot se solapa con algún evento
             overlap = False
             for event in events:
                 event_start = parser.isoparse(event['start'])
                 event_stop = parser.isoparse(event['stop'])
+
+                # Convertir las fechas de evento a UTC si no tienen zona horaria
+                if event_start.tzinfo is None:
+                    event_start = event_start.replace(tzinfo=pytz.UTC)
+                if event_stop.tzinfo is None:
+                    event_stop = event_stop.replace(tzinfo=pytz.UTC)
+
+                print(f"Comparando con evento: {event_start} - {event_stop}")
+                sys.stdout.flush()
 
                 # Comparar los slots con los eventos
                 if not (slot_stop <= event_start or slot_start >= event_stop):
