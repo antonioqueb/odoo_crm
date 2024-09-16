@@ -18,9 +18,24 @@ def free_slots(models, db, uid, password, mexico_tz):
         print(f"Parámetros recibidos: start_time={start_time}, end_time={end_time}, company_id={company_id}")
         sys.stdout.flush()
 
+        # Convertir los parámetros de fecha a UTC, asegurándonos de que tengan zona horaria
+        start_time = parser.isoparse(start_time)
+        end_time = parser.isoparse(end_time)
+
+        # Asegurarse de que las fechas están en UTC
+        if start_time.tzinfo is None:
+            start_time = mexico_tz.localize(start_time).astimezone(pytz.utc)
+        else:
+            start_time = start_time.astimezone(pytz.utc)
+
+        if end_time.tzinfo is None:
+            end_time = mexico_tz.localize(end_time).astimezone(pytz.utc)
+        else:
+            end_time = end_time.astimezone(pytz.utc)
+
         # Obtener los eventos programados
         event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/events?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
         )
         event_response = requests.get(event_api_url)
         if event_response.status_code != 200:
@@ -32,7 +47,7 @@ def free_slots(models, db, uid, password, mexico_tz):
 
         # Obtener los slots disponibles
         slot_api_url = (
-            f'https://crm.gestpro.cloud/available_slots?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/available_slots?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
         )
         slot_response = requests.get(slot_api_url)
         if slot_response.status_code != 200:
@@ -84,7 +99,7 @@ def free_slots(models, db, uid, password, mexico_tz):
 
             # **Restricción del tiempo de fin:**
             # Asegurar que los slots no excedan las 23:00 del mismo día
-            day_end = parser.isoparse(end_time).replace(hour=23, minute=0, second=0, microsecond=0)
+            day_end = end_time.replace(hour=23, minute=0, second=0, microsecond=0)
             if slot_stop > day_end:
                 slot_stop = day_end  # Limitar el tiempo de fin a las 23:00
 
