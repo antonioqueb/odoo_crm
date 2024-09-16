@@ -2,6 +2,7 @@ from flask import jsonify, request
 from datetime import datetime, timedelta
 import pytz
 from dateutil import parser
+import requests  # Agregar la importación de requests
 
 def get_events(models, db, uid, password, mexico_tz):
     try:
