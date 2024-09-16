@@ -105,6 +105,10 @@ def free_slots(models, db, uid, password, mexico_tz):
             else:
                 slot_stop = slot_stop.astimezone(pytz.utc)
 
+            # Asegurarse de que los slots no superen el tiempo final especificado
+            if slot_stop > end_time:
+                slot_stop = end_time
+
             # Verificar si el slot se solapa con algún evento
             overlap = False
             for event_start, event_stop in busy_times:
