@@ -53,7 +53,7 @@ def free_slots(models, db, uid, password, mexico_tz):
             if slot_stop.tzinfo is None:
                 slot_stop = slot_stop.replace(tzinfo=pytz.UTC)
 
-            print(f"Comparando slot: {slot_start} - {slot_stop}")
+            print(f"Comparando slot (UTC): {slot_start} - {slot_stop}")
             sys.stdout.flush()
 
             # Verificar si el slot se solapa con algún evento
@@ -68,7 +68,7 @@ def free_slots(models, db, uid, password, mexico_tz):
                 if event_stop.tzinfo is None:
                     event_stop = event_stop.replace(tzinfo=pytz.UTC)
 
-                print(f"Comparando con evento: {event_start} - {event_stop}")
+                print(f"Comparando con evento (UTC): {event_start} - {event_stop}")
                 sys.stdout.flush()
 
                 # Comparar los slots con los eventos
@@ -77,10 +77,14 @@ def free_slots(models, db, uid, password, mexico_tz):
                     print(f"Solapamiento detectado: Slot {slot['start']} - {slot['stop']} con Evento {event['start']} - {event['stop']}")
                     sys.stdout.flush()
                     break
-            
+
             # Si no hay solapamiento, agregar el slot a la lista de free_slots
             if not overlap:
                 free_slots.append(slot)
+
+            # Imprimir detalles de los slots comparados
+            print(f"Slot: {slot['start']} - {slot['stop']} | ¿Solapado?: {'Sí' if overlap else 'No'}")
+            sys.stdout.flush()
 
         # Logs de los slots libres
         print(f"Slots libres encontrados: {free_slots}")
