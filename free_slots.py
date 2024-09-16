@@ -1,10 +1,8 @@
 from flask import jsonify, request
 import requests
 import sys
-from dateutil import parser
-import pytz  # ** Importación de pytz **
 
-def free_slots(models, db, uid, password, mexico_tz):
+def free_slots(models, db, uid, password):
     try:
         # Obtener parámetros de la solicitud
         start_time, end_time, company_id = (
@@ -41,49 +39,19 @@ def free_slots(models, db, uid, password, mexico_tz):
         print(f"Eventos recibidos: {events}")
         sys.stdout.flush()
 
-        # **Tercero**: Filtrar los slots eliminando aquellos que se solapen con eventos ocupados
+        # **Tercero**: Comparar las fechas como texto plano
         free_slots = []
+        event_times = [(event['start'], event['stop']) for event in events]
+
         for slot in slots:
-            slot_start = parser.isoparse(slot['start'])
-            slot_stop = parser.isoparse(slot['stop'])
+            slot_times = (slot['start'], slot['stop'])
 
-            # Convertir las fechas de slot a UTC si no tienen zona horaria
-            if slot_start.tzinfo is None:
-                slot_start = slot_start.replace(tzinfo=pytz.UTC)
-            if slot_stop.tzinfo is None:
-                slot_stop = slot_stop.replace(tzinfo=pytz.UTC)
-
-            print(f"Comparando slot (UTC): {slot_start} - {slot_stop}")
-            sys.stdout.flush()
-
-            # Verificar si el slot se solapa con algún evento
-            overlap = False
-            for event in events:
-                event_start = parser.isoparse(event['start'])
-                event_stop = parser.isoparse(event['stop'])
-
-                # Convertir las fechas de evento a UTC si no tienen zona horaria
-                if event_start.tzinfo is None:
-                    event_start = event_start.replace(tzinfo=pytz.UTC)
-                if event_stop.tzinfo is None:
-                    event_stop = event_stop.replace(tzinfo=pytz.UTC)
-
-                print(f"Comparando con evento (UTC): {event_start} - {event_stop}")
-                sys.stdout.flush()
-
-                # Comparar los slots con los eventos
-                if slot_start < event_stop and slot_stop > event_start:
-                    overlap = True
-                    print(f"Solapamiento detectado: Slot {slot['start']} - {slot['stop']} con Evento {event['start']} - {event['stop']}")
-                    sys.stdout.flush()
-                    break
-
-            # Si no hay solapamiento, agregar el slot a la lista de free_slots
-            if not overlap:
+            # Comparar si el slot está en el conjunto de eventos
+            if slot_times not in event_times:
                 free_slots.append(slot)
 
             # Imprimir detalles de los slots comparados
-            print(f"Slot: {slot['start']} - {slot['stop']} | ¿Solapado?: {'Sí' if overlap else 'No'}")
+            print(f"Slot: {slot['start']} - {slot['stop']} | ¿Coincide con evento?: {'Sí' if slot_times in event_times else 'No'}")
             sys.stdout.flush()
 
         # Logs de los slots libres
