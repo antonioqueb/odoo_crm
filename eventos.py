@@ -1,8 +1,7 @@
 from flask import jsonify, request
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 from dateutil import parser
-import requests  # Agregar la importación de requests
 
 def get_events(models, db, uid, password, mexico_tz):
     try:
@@ -13,34 +12,41 @@ def get_events(models, db, uid, password, mexico_tz):
         if not all([start_time, end_time, company_id]):
             raise ValueError("Los parámetros start_time, end_time y company_id son obligatorios.")
         
-        # Ampliar el rango de búsqueda en 1 día por cada lado
-        extended_start_time = parser.isoparse(start_time) - timedelta(days=1)
-        extended_end_time = parser.isoparse(end_time) + timedelta(days=1)
-        
-        # Hacer la consulta a la API con el rango extendido
-        event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={extended_start_time.isoformat()}&end_time={extended_end_time.isoformat()}&company_id={company_id}'
+        # Parsear fechas recibidas y convertirlas a UTC directamente
+        start_dt = parser.isoparse(start_time).astimezone(pytz.utc)
+        end_dt = parser.isoparse(end_time).astimezone(pytz.utc)
+
+        # Convertir las fechas a cadena en formato UTC para la consulta en Odoo
+        start_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
+        end_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Buscar eventos en Odoo usando las fechas en UTC
+        events = models.execute_kw(
+            db, uid, password, 'calendar.event', 'search_read', [[
+                ('start', '<=', end_str), 
+                ('stop', '>=', start_str), 
+                ('company_id', '=', int(company_id))
+            ]], {'fields': ['start', 'stop']}
         )
-        event_response = requests.get(event_api_url)
-        if event_response.status_code != 200:
-            raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
-        
-        # Recibir los eventos de la API
-        events = event_response.json().get('events', [])
-        print(f"Eventos recibidos con rango extendido: {events}")
-        
-        # Filtrar los eventos para que solo caigan dentro del rango solicitado
-        filtered_events = []
+
+        # Convertir las fechas de eventos de UTC a la zona horaria de México
         for event in events:
             event_start = parser.isoparse(event['start'])
             event_stop = parser.isoparse(event['stop'])
-            if event_start >= parser.isoparse(start_time) and event_stop <= parser.isoparse(end_time):
-                filtered_events.append(event)
-        
-        print(f"Eventos filtrados: {filtered_events}")
 
-        # Procesar los eventos y devolver la respuesta
-        return jsonify({'status': 'success', 'events': filtered_events}), 200
+            # Convertir las fechas de UTC a la zona horaria de México
+            event_start_mx = event_start.astimezone(mexico_tz)
+            event_stop_mx = event_stop.astimezone(mexico_tz)
+
+            # Actualizar las fechas en formato ISO en la zona horaria de México
+            event.update({
+                'start': event_start_mx.strftime('%Y-%m-%dT%H:%M:%S'),
+                'stop': event_stop_mx.strftime('%Y-%m-%dT%H:%M:%S')
+            })
+
+        # Devolver los eventos con las fechas convertidas
+        return jsonify({'status': 'success', 'events': events}), 200
 
     except Exception as e:
+        # En caso de error, devolver el mensaje de error
         return jsonify({'status': 'error', 'message': str(e)}), 500
