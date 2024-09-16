@@ -33,9 +33,12 @@ def free_slots(models, db, uid, password, mexico_tz):
         else:
             end_time = end_time.astimezone(pytz.utc)
 
+        # Limitar el tiempo de fin al final del día (23:59:59)
+        end_of_day = end_time.replace(hour=23, minute=59, second=59, microsecond=0)
+
         # Eliminar la parte de la zona horaria y usar la cadena ISO sin componentes extra
         start_time_iso = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
-        end_time_iso = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
+        end_time_iso = end_of_day.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
 
         # Obtener los eventos programados
         event_api_url = (
@@ -104,6 +107,10 @@ def free_slots(models, db, uid, password, mexico_tz):
                 slot_stop = mexico_tz.localize(slot_stop).astimezone(pytz.utc)
             else:
                 slot_stop = slot_stop.astimezone(pytz.utc)
+
+            # Asegurarse de que los slots no superen el final del día
+            if slot_stop > end_of_day:
+                slot_stop = end_of_day
 
             # Verificar solapamiento con eventos ocupados
             overlap = False
