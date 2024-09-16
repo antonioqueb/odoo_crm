@@ -86,12 +86,9 @@ def free_slots(models, db, uid, password, mexico_tz):
         print(f"Slots libres encontrados: {free_slots}")
         sys.stdout.flush()
 
-        # Formatear los slots en texto plano para devolverlos sin formato JSON
-        free_slots_text = "\n".join([f"Slot disponible: {slot['start']} - {slot['stop']}" for slot in free_slots])
-
-        return free_slots_text, 200
+        return jsonify({'status': 'success', 'free_slots': free_slots}), 200
 
     except Exception as e:
         print(f"Error en la función free_slots: {str(e)}")
         sys.stdout.flush()
-        return str(e), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
