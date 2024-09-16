@@ -33,9 +33,13 @@ def free_slots(models, db, uid, password, mexico_tz):
         else:
             end_time = end_time.astimezone(pytz.utc)
 
+        # Eliminar la parte de la zona horaria +00:00 y usar la cadena ISO sin componentes extra
+        start_time_iso = start_time.replace(tzinfo=None).isoformat() + "Z"  # Formato ISO básico
+        end_time_iso = end_time.replace(tzinfo=None).isoformat() + "Z"  # Formato ISO básico
+
         # Obtener los eventos programados
         event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/events?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
         )
         event_response = requests.get(event_api_url)
         if event_response.status_code != 200:
@@ -47,7 +51,7 @@ def free_slots(models, db, uid, password, mexico_tz):
 
         # Obtener los slots disponibles
         slot_api_url = (
-            f'https://crm.gestpro.cloud/available_slots?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/available_slots?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
         )
         slot_response = requests.get(slot_api_url)
         if slot_response.status_code != 200:
