@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import requests
 import pytz
 from dateutil import parser
-import sys
+import sys  # ** Importación de sys **
 
 def free_slots(models, db, uid, password, mexico_tz):
     try:
