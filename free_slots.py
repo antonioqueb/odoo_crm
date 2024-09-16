@@ -4,7 +4,6 @@ import sys
 from dateutil import parser
 import pytz  # ** Importación de pytz **
 
-
 def free_slots(models, db, uid, password, mexico_tz):
     try:
         # Obtener parámetros de la solicitud
@@ -73,7 +72,7 @@ def free_slots(models, db, uid, password, mexico_tz):
                 sys.stdout.flush()
 
                 # Comparar los slots con los eventos
-                if not (slot_stop <= event_start or slot_start >= event_stop):
+                if slot_start < event_stop and slot_stop > event_start:
                     overlap = True
                     print(f"Solapamiento detectado: Slot {slot['start']} - {slot['stop']} con Evento {event['start']} - {event['stop']}")
                     sys.stdout.flush()
