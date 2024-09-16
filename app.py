@@ -1,3 +1,15 @@
+# app.py
+from flask import Flask
+from flask_cors import CORS
+from config import models, db, uid, password, mexico_tz
+from eventos import get_events
+from slots import available_slots
+from free_slots import free_slots  # Importamos la función free_slots
+from opportunity import create_opportunity  # Importamos create_opportunity
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "https://inventario-plus.gestpro.cloud"}})
+
 def register_routes():
     routes = [
         ('/create_opportunity', 'POST', create_opportunity, 'opportunity'),
@@ -25,3 +37,6 @@ def register_routes():
             )
 
 register_routes()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
