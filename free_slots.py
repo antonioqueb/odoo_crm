@@ -37,19 +37,7 @@ def free_slots(models, db, uid, password, mexico_tz):
         start_time_iso = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
         end_time_iso = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
 
-        # Obtener los eventos programados
-        event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
-        )
-        event_response = requests.get(event_api_url)
-        if event_response.status_code != 200:
-            raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
-        
-        events = event_response.json().get('events', [])
-        print(f"Eventos recibidos: {events}")
-        sys.stdout.flush()
-
-        # Obtener los slots disponibles
+        # **Primero**: Obtener los slots disponibles
         slot_api_url = (
             f'https://crm.gestpro.cloud/available_slots?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
         )
@@ -61,11 +49,23 @@ def free_slots(models, db, uid, password, mexico_tz):
         print(f"Slots disponibles recibidos: {slots}")
         sys.stdout.flush()
 
-        # Si no hay eventos, devolver los mismos slots que available_slots
+        # **Segundo**: Obtener los eventos programados
+        event_api_url = (
+            f'https://crm.gestpro.cloud/events?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
+        )
+        event_response = requests.get(event_api_url)
+        if event_response.status_code != 200:
+            raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
+        
+        events = event_response.json().get('events', [])
+        print(f"Eventos recibidos: {events}")
+        sys.stdout.flush()
+
+        # Si no hay eventos, devolver los mismos slots que available_slots sin cambios
         if not events:
             return jsonify({'status': 'success', 'free_slots': slots}), 200
 
-        # Convertir los eventos en un formato manejable (listas de datetimes)
+        # Convertir los eventos en una lista de tiempos ocupados (listas de datetimes)
         busy_times = []
         for e in events:
             event_start = parser.isoparse(e['start'])
@@ -85,10 +85,10 @@ def free_slots(models, db, uid, password, mexico_tz):
             busy_times.append((event_start, event_stop))
         
         # Logs de los tiempos ocupados
-        print(f"Tiempos ocupados: {busy_times}")
+        print(f"Tiempos ocupados (eventos): {busy_times}")
         sys.stdout.flush()
 
-        # Convertir los slots a objetos datetime y restarlos de los tiempos ocupados
+        # **Tercero**: Filtrar los slots disponibles eliminando aquellos que solapen con eventos
         free_slots = []
         for slot in slots:
             slot_start = parser.isoparse(slot['start'])
@@ -105,24 +105,22 @@ def free_slots(models, db, uid, password, mexico_tz):
             else:
                 slot_stop = slot_stop.astimezone(pytz.utc)
 
-            # Asegurarse de que los slots no superen el end_time
-            if slot_stop > end_time:
-                slot_stop = end_time
-
-            # Verificar solapamiento con eventos ocupados
+            # Verificar si el slot se solapa con algún evento
             overlap = False
             for event_start, event_stop in busy_times:
                 if not (slot_stop <= event_start or slot_start >= event_stop):
                     overlap = True
                     break
-            if not overlap and slot_start < end_time:
+
+            # Si no hay solapamiento, agregar el slot a la lista de free_slots
+            if not overlap:
                 free_slots.append({
                     'start': slot_start.strftime('%Y-%m-%dT%H:%M:%S'),  # Quitar la 'Z'
                     'stop': slot_stop.strftime('%Y-%m-%dT%H:%M:%S')  # Quitar la 'Z'
                 })
 
         # Logs de los slots libres
-        print(f"Slots libres encontrados: {free_slots}")
+        print(f"Slots libres encontrados (sin solapamientos): {free_slots}")
         sys.stdout.flush()
 
         return jsonify({'status': 'success', 'free_slots': free_slots}), 200
