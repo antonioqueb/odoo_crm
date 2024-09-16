@@ -20,7 +20,7 @@ def register_routes():
     for route, method, func, endpoint in routes:
         app.add_url_rule(
             route, 
-            view_func=lambda func=func: func(models, db, uid, password, mexico_tz), 
+            view_func=lambda func=func: func(models, db, uid, password), 
             methods=[method], 
             endpoint=endpoint
         )
