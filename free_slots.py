@@ -1,8 +1,5 @@
 from flask import jsonify, request
-from datetime import datetime, timedelta
 import requests
-import pytz
-from dateutil import parser
 import sys  # ** Importación de sys **
 
 def free_slots(models, db, uid, password, mexico_tz):
@@ -18,116 +15,20 @@ def free_slots(models, db, uid, password, mexico_tz):
         print(f"Parámetros recibidos: start_time={start_time}, end_time={end_time}, company_id={company_id}")
         sys.stdout.flush()
 
-        # Convertir los parámetros de fecha a UTC, asegurándonos de que tengan zona horaria
-        start_time = parser.isoparse(start_time)
-        end_time = parser.isoparse(end_time)
-
-        # Asegurarse de que las fechas están en UTC
-        if start_time.tzinfo is None:
-            start_time = mexico_tz.localize(start_time).astimezone(pytz.utc)
-        else:
-            start_time = start_time.astimezone(pytz.utc)
-
-        if end_time.tzinfo is None:
-            end_time = mexico_tz.localize(end_time).astimezone(pytz.utc)
-        else:
-            end_time = end_time.astimezone(pytz.utc)
-
-        # Eliminar la parte de la zona horaria y usar la cadena ISO sin componentes extra
-        start_time_iso = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
-        end_time_iso = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # Formato ISO con "Z" para UTC
-
-        # **Primero**: Obtener los slots disponibles
+        # **Obtener los slots disponibles** sin hacer ninguna modificación o filtrado
         slot_api_url = (
-            f'https://crm.gestpro.cloud/available_slots?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/available_slots?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
         slot_response = requests.get(slot_api_url)
         if slot_response.status_code != 200:
             raise Exception(f"Error al consultar la API de slots: {slot_response.text}")
         
+        # Devolver los slots tal cual se recibieron de la API de available_slots
         slots = slot_response.json().get('available_slots', [])
         print(f"Slots disponibles recibidos: {slots}")
         sys.stdout.flush()
 
-        # **Segundo**: Obtener los eventos programados
-        event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
-        )
-        event_response = requests.get(event_api_url)
-        if event_response.status_code != 200:
-            raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
-        
-        events = event_response.json().get('events', [])
-        print(f"Eventos recibidos: {events}")
-        sys.stdout.flush()
-
-        # Si no hay eventos, devolver los mismos slots que available_slots sin cambios
-        if not events:
-            return jsonify({'status': 'success', 'free_slots': slots}), 200
-
-        # Convertir los eventos en una lista de tiempos ocupados (listas de datetimes)
-        busy_times = []
-        for e in events:
-            event_start = parser.isoparse(e['start'])
-            event_stop = parser.isoparse(e['stop'])
-
-            # Asegurarse de que las fechas están en UTC
-            if event_start.tzinfo is None:
-                event_start = mexico_tz.localize(event_start).astimezone(pytz.utc)
-            else:
-                event_start = event_start.astimezone(pytz.utc)
-            
-            if event_stop.tzinfo is None:
-                event_stop = mexico_tz.localize(event_stop).astimezone(pytz.utc)
-            else:
-                event_stop = event_stop.astimezone(pytz.utc)
-
-            busy_times.append((event_start, event_stop))
-        
-        # Logs de los tiempos ocupados
-        print(f"Tiempos ocupados (eventos): {busy_times}")
-        sys.stdout.flush()
-
-        # **Tercero**: Filtrar los slots disponibles eliminando aquellos que solapen con eventos
-        free_slots = []
-        for slot in slots:
-            slot_start = parser.isoparse(slot['start'])
-            slot_stop = parser.isoparse(slot['stop'])
-
-            # Asegurarse de que las fechas están en UTC
-            if slot_start.tzinfo is None:
-                slot_start = mexico_tz.localize(slot_start).astimezone(pytz.utc)
-            else:
-                slot_start = slot_start.astimezone(pytz.utc)
-            
-            if slot_stop.tzinfo is None:
-                slot_stop = mexico_tz.localize(slot_stop).astimezone(pytz.utc)
-            else:
-                slot_stop = slot_stop.astimezone(pytz.utc)
-
-            # Asegurarse de que los slots no superen el tiempo final especificado
-            if slot_stop > end_time:
-                slot_stop = end_time
-
-            # Verificar si el slot se solapa con algún evento
-            overlap = False
-            for event_start, event_stop in busy_times:
-                if not (slot_stop <= event_start or slot_start >= event_stop):
-                    overlap = True
-                    break
-
-            # Si no hay solapamiento, agregar el slot a la lista de free_slots
-            if not overlap:
-                free_slots.append({
-                    'start': slot_start.strftime('%Y-%m-%dT%H:%M:%S'),  # Quitar la 'Z'
-                    'stop': slot_stop.strftime('%Y-%m-%dT%H:%M:%S')  # Quitar la 'Z'
-                })
-
-        # Logs de los slots libres
-        print(f"Slots libres encontrados (sin solapamientos): {free_slots}")
-        sys.stdout.flush()
-
-        return jsonify({'status': 'success', 'free_slots': free_slots}), 200
+        return jsonify({'status': 'success', 'free_slots': slots}), 200
 
     except Exception as e:
         print(f"Error en la función free_slots: {str(e)}")
