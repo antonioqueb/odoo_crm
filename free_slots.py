@@ -52,7 +52,7 @@ def free_slots(models, db, uid, password, mexico_tz):
                 event_start = parser.isoparse(event['start'])
                 event_stop = parser.isoparse(event['stop'])
 
-                # Si hay superposición, marcar el slot como ocupado
+                # Verificar si hay solapamiento
                 if not (slot_stop <= event_start or slot_start >= event_stop):
                     overlap = True
                     break
