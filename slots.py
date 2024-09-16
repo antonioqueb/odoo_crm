@@ -21,11 +21,19 @@ def available_slots(models, db, uid, password, mexico_tz):
         if response.status_code != 200:
             raise Exception(f"Error al consultar la API de eventos: {response.text}")
 
+        # Depuración: Verificar los eventos recibidos
+        print(f"Eventos recibidos de la API: {response.json()}")
+        sys.stdout.flush()
+
         # Convertir eventos a objetos datetime en UTC y luego a la zona horaria de México
         busy_times = []
         for e in response.json()['events']:
             event_start = parser.isoparse(e['start'])
             event_stop = parser.isoparse(e['stop'])
+
+            # Depuración: Verificar fechas de los eventos
+            print(f"Evento: desde {event_start} hasta {event_stop}")
+            sys.stdout.flush()
 
             # Asegurarse de que las fechas están en UTC
             if event_start.tzinfo is None:
@@ -39,6 +47,10 @@ def available_slots(models, db, uid, password, mexico_tz):
                 event_stop = event_stop.astimezone(pytz.utc)
 
             busy_times.append((event_start, event_stop))
+
+        # Depuración: Verificar tiempos ocupados
+        print(f"Tiempos ocupados: {busy_times}")
+        sys.stdout.flush()
 
         # Definir horas de trabajo (por ejemplo, 00:00 a 23:00)
         working_hours = [(f"{h:02}:00", f"{h+1:02}:00") for h in range(24)]
@@ -69,12 +81,20 @@ def available_slots(models, db, uid, password, mexico_tz):
                 all(next_time <= b[0] or current_time >= b[1] for b in busy_times) and 
                 current_time > datetime.now(mexico_tz)
             ):
+                # Depuración: Verificar slots disponibles
+                print(f"Slot disponible: {current_time.strftime('%H:%M')} - {next_time.strftime('%H:%M')}")
+                sys.stdout.flush()
+
                 # Convertir a UTC sin el sufijo 'Z'
                 slot_start_utc = current_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S')  # Sin 'Z'
                 slot_stop_utc = next_time.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S')  # Sin 'Z'
                 available_slots.append({'start': slot_start_utc, 'stop': slot_stop_utc})
 
             current_time = next_time
+
+        # Depuración: Verificar los slots disponibles
+        print(f"Slots disponibles: {available_slots}")
+        sys.stdout.flush()
 
         return jsonify({'status': 'success', 'available_slots': available_slots}), 200
 
