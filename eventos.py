@@ -27,15 +27,11 @@ def get_events(models, db, uid, password, mexico_tz):
         else:
             end_dt = end_dt.astimezone(pytz.utc)
 
-        # Convertir a la zona horaria de México
-        start_dt_mx = start_dt.astimezone(mexico_tz)
-        end_dt_mx = end_dt.astimezone(mexico_tz)
+        # Formatear fechas para la consulta en Odoo en UTC
+        start_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
+        end_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
 
-        # Formatear fechas para la consulta en Odoo
-        start_str = start_dt_mx.strftime('%Y-%m-%d %H:%M:%S')
-        end_str = end_dt_mx.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Buscar eventos en Odoo
+        # Buscar eventos en Odoo usando las fechas en UTC
         events = models.execute_kw(
             db, uid, password, 'calendar.event', 'search_read', [[
                 ('start', '<=', end_str), 
@@ -44,23 +40,23 @@ def get_events(models, db, uid, password, mexico_tz):
             ]], {'fields': ['start', 'stop']}
         )
 
-        # Convertir fechas de eventos a UTC sin el sufijo 'Z'
+        # Convertir fechas de eventos a UTC
         for event in events:
             event_start = parser.isoparse(event['start'])
             event_stop = parser.isoparse(event['stop'])
 
             # Asegurarse de que las fechas están en UTC
             if event_start.tzinfo is None:
-                event_start = mexico_tz.localize(event_start).astimezone(pytz.utc)
+                event_start = pytz.utc.localize(event_start)
             else:
                 event_start = event_start.astimezone(pytz.utc)
             
             if event_stop.tzinfo is None:
-                event_stop = mexico_tz.localize(event_stop).astimezone(pytz.utc)
+                event_stop = pytz.utc.localize(event_stop)
             else:
                 event_stop = event_stop.astimezone(pytz.utc)
 
-            # Actualizar las fechas sin el sufijo 'Z'
+            # Actualizar las fechas sin el sufijo 'Z' para que se mantengan en UTC
             event.update({
                 'start': event_start.strftime('%Y-%m-%dT%H:%M:%S'),
                 'stop': event_stop.strftime('%Y-%m-%dT%H:%M:%S')
