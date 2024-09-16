@@ -52,9 +52,11 @@ def free_slots(models, db, uid, password, mexico_tz):
                 event_start = parser.isoparse(event['start'])
                 event_stop = parser.isoparse(event['stop'])
 
-                # Verificar si hay solapamiento
+                # Comparar los slots con los eventos
                 if not (slot_stop <= event_start or slot_start >= event_stop):
                     overlap = True
+                    print(f"Solapamiento detectado: Slot {slot['start']} - {slot['stop']} con Evento {event['start']} - {event['stop']}")
+                    sys.stdout.flush()
                     break
             
             # Si no hay solapamiento, agregar el slot a la lista de free_slots
