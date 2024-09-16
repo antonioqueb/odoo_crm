@@ -16,8 +16,7 @@ def get_events(models, db, uid, password, mexico_tz):
         start_dt = parser.isoparse(start_time).astimezone(pytz.utc)
         end_dt = parser.isoparse(end_time).astimezone(pytz.utc)
 
-        # No convertimos las fechas a la zona horaria de México todavía
-        # Simplemente las usamos para la consulta en Odoo directamente en UTC
+        # Convertir las fechas a cadena en formato UTC para la consulta en Odoo
         start_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
         end_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -30,22 +29,24 @@ def get_events(models, db, uid, password, mexico_tz):
             ]], {'fields': ['start', 'stop']}
         )
 
-        # Convertir las fechas de eventos a la zona horaria de México
+        # Convertir las fechas de eventos de UTC a la zona horaria de México
         for event in events:
             event_start = parser.isoparse(event['start'])
             event_stop = parser.isoparse(event['stop'])
 
-            # Convertir las fechas de UTC a la zona horaria de México, manteniendo la fecha y hora correctas
+            # Convertir las fechas de UTC a la zona horaria de México
             event_start_mx = event_start.astimezone(mexico_tz)
             event_stop_mx = event_stop.astimezone(mexico_tz)
 
-            # Actualizar las fechas en formato ISO con la zona horaria de México
+            # Actualizar las fechas en formato ISO en la zona horaria de México
             event.update({
                 'start': event_start_mx.strftime('%Y-%m-%dT%H:%M:%S'),
                 'stop': event_stop_mx.strftime('%Y-%m-%dT%H:%M:%S')
             })
 
+        # Devolver los eventos con las fechas convertidas
         return jsonify({'status': 'success', 'events': events}), 200
 
     except Exception as e:
+        # En caso de error, devolver el mensaje de error
         return jsonify({'status': 'error', 'message': str(e)}), 500
