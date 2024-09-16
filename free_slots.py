@@ -33,35 +33,35 @@ def free_slots(models, db, uid, password, mexico_tz):
         else:
             end_time = end_time.astimezone(pytz.utc)
 
-        # Eliminar la parte de la zona horaria +00:00 y usar la cadena ISO sin componentes extra
-        start_time_iso = start_time.replace(tzinfo=None).isoformat() + "Z"  # Formato ISO básico
-        end_time_iso = end_time.replace(tzinfo=None).isoformat() + "Z"  # Formato ISO básico
-
         # Obtener los eventos programados
         event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/events?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
         )
         event_response = requests.get(event_api_url)
         if event_response.status_code != 200:
             raise Exception(f"Error al consultar la API de eventos: {event_response.text}")
         
-        events = event_response.json()['events']
+        events = event_response.json().get('events', [])
         print(f"Eventos recibidos: {events}")
         sys.stdout.flush()
 
         # Obtener los slots disponibles
         slot_api_url = (
-            f'https://crm.gestpro.cloud/available_slots?start_time={start_time_iso}&end_time={end_time_iso}&company_id={company_id}'
+            f'https://crm.gestpro.cloud/available_slots?start_time={start_time.isoformat()}&end_time={end_time.isoformat()}&company_id={company_id}'
         )
         slot_response = requests.get(slot_api_url)
         if slot_response.status_code != 200:
             raise Exception(f"Error al consultar la API de slots: {slot_response.text}")
         
-        slots = slot_response.json()['available_slots']
+        slots = slot_response.json().get('available_slots', [])
         print(f"Slots disponibles recibidos: {slots}")
         sys.stdout.flush()
 
-        # Convertir los eventos en un formato manejable
+        # Si no hay eventos, devolver los mismos slots que available_slots
+        if not events:
+            return jsonify({'status': 'success', 'free_slots': slots}), 200
+
+        # Convertir los eventos en un formato manejable (listas de datetimes)
         busy_times = []
         for e in events:
             event_start = parser.isoparse(e['start'])
@@ -100,12 +100,6 @@ def free_slots(models, db, uid, password, mexico_tz):
                 slot_stop = mexico_tz.localize(slot_stop).astimezone(pytz.utc)
             else:
                 slot_stop = slot_stop.astimezone(pytz.utc)
-
-            # **Restricción del tiempo de fin:**
-            # Asegurar que los slots no excedan las 23:00 del mismo día
-            day_end = end_time.replace(hour=23, minute=0, second=0, microsecond=0)
-            if slot_stop > day_end:
-                slot_stop = day_end  # Limitar el tiempo de fin a las 23:00
 
             # Verificar solapamiento con eventos ocupados
             overlap = False
