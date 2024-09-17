@@ -58,7 +58,7 @@ def get_events(models, db, uid, password, mexico_tz):
         logging.debug(f"Dominio de búsqueda en Odoo: {search_domain}")
 
         events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [search_domain],
+            db, uid, password, 'calendar.event', 'search_read', [search_domain], 
             {'fields': ['start', 'stop']}
         )
 
@@ -71,16 +71,20 @@ def get_events(models, db, uid, password, mexico_tz):
 
             logging.debug(f"Evento UTC: inicio={event_start_utc}, fin={event_stop_utc}")
 
-            # Convertir a UTC y formatear sin el indicativo de zona horaria
-            event_start_formatted = event_start_utc.strftime('%Y-%m-%dT%H:%M:%S') + '+00:00'
-            event_stop_formatted = event_stop_utc.strftime('%Y-%m-%dT%H:%M:%S') + '+00:00'
+            # Convertir a la zona horaria de México
+            event_start_mx = event_start_utc.astimezone(mexico_tz)
+            event_stop_mx = event_stop_utc.astimezone(mexico_tz)
 
-            logging.debug(f"Evento formateado a UTC: inicio={event_start_formatted}, fin={event_stop_formatted}")
+            logging.debug(f"Evento México TZ: inicio={event_start_mx}, fin={event_stop_mx}")
 
-            # Actualizar las fechas en el evento
+            # Actualizar las fechas en formato ISO en la zona horaria de México
+            # Realizar la sustitución de '-06:00' por '-00:00'
+            start_iso = event_start_mx.isoformat().replace('-06:00', '-00:00')
+            stop_iso = event_stop_mx.isoformat().replace('-06:00', '-00:00')
+
             event.update({
-                'start': event_start_formatted,
-                'stop': event_stop_formatted
+                'start': start_iso,
+                'stop': stop_iso
             })
 
         # Devolver los eventos con las fechas convertidas
@@ -88,4 +92,5 @@ def get_events(models, db, uid, password, mexico_tz):
 
     except Exception as e:
         logging.error(f"Error en get_events: {e}")
+        # En caso de error, devolver el mensaje de error
         return jsonify({'status': 'error', 'message': str(e)}), 500
