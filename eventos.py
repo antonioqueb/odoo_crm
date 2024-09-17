@@ -78,9 +78,9 @@ def get_events(models, db, uid, password, mexico_tz):
             logging.debug(f"Evento México TZ: inicio={event_start_mx}, fin={event_stop_mx}")
 
             # Actualizar las fechas en formato ISO en la zona horaria de México
-            # Realizar la sustitución de '-06:00' por '-00:00'
-            start_iso = event_start_mx.isoformat().replace('-06:00', '-00:00')
-            stop_iso = event_stop_mx.isoformat().replace('-06:00', '-00:00')
+            # Eliminar la parte de la zona horaria (-00:00)
+            start_iso = event_start_mx.isoformat().replace('-00:00', '').replace('-06:00', '')
+            stop_iso = event_stop_mx.isoformat().replace('-00:00', '').replace('-06:00', '')
 
             event.update({
                 'start': start_iso,
