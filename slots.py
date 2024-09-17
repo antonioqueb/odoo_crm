@@ -1,4 +1,3 @@
-# slots.py
 from flask import jsonify, request
 from datetime import datetime, timedelta
 import requests
@@ -80,8 +79,8 @@ def available_slots(models, db, uid, password, mexico_tz):
             # Verificar si el slot está dentro de las horas de trabajo y no está ocupado
             if (
                 time_slot in working_hours and 
-                all(next_time <= b[0] or current_time >= b[1] for b in busy_times) and 
-                current_time > datetime.now(mexico_tz)
+                all(next_time <= b[0] or current_time >= b[1] for b in busy_times)
+                # current_time > datetime.now(mexico_tz)  # Esta línea se comenta temporalmente
             ):
                 # Depuración: Verificar slots disponibles
                 print(f"Slot disponible: {current_time.strftime('%H:%M')} - {next_time.strftime('%H:%M')}")
