@@ -125,8 +125,8 @@ def create_opportunity(models, db, uid, password, mexico_tz):
         # Comprobar si el evento ya está reservado
         try:
             events = models.execute_kw(db, uid, password, 'calendar.event', 'search_count', [[
-                ('start', '<=', end_time_utc.strftime('%Y-%m-%d %H:%M:%S')), 
-                ('stop', '>=', start_time_utc.strftime('%Y-%m-%d %H:%M:%S'))
+                ('start', '<', end_time_utc.strftime('%Y-%m-%d %H:%M:%S')), 
+                ('stop', '>', start_time_utc.strftime('%Y-%m-%d %H:%M:%S'))
             ]])
             print(f"Eventos coincidentes encontrados: {events}")
             sys.stdout.flush()
