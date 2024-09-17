@@ -4,24 +4,6 @@ import sys
 from dateutil import parser
 import pytz
 
-# Función para formatear las fechas de los eventos y eliminar la información de la zona horaria
-def format_events(events):
-    formatted_events = []
-    for event in events:
-        # Parseamos las fechas recibidas
-        event_start = parser.isoparse(event['start'])
-        event_stop = parser.isoparse(event['stop'])
-        
-        # Convertimos las fechas a formato sin zona horaria (ignoramos la parte -06:00)
-        formatted_event = {
-            'id': event['id'],
-            'start': event_start.strftime('%Y-%m-%dT%H:%M:%S'),
-            'stop': event_stop.strftime('%Y-%m-%dT%H:%M:%S')
-        }
-        formatted_events.append(formatted_event)
-    
-    return formatted_events
-
 def free_slots(models, db, uid, password):
     try:
         # Obtener parámetros de la solicitud
@@ -58,9 +40,6 @@ def free_slots(models, db, uid, password):
         events = event_response.json().get('events', [])
         print(f"Eventos recibidos: {events}")
         sys.stdout.flush()
-
-        # Formatear los eventos para eliminar la información de zona horaria y dejarlos en el formato deseado
-        events = format_events(events)
 
         # **Tercero**: Comparar los slots con los eventos para eliminar solapamientos
         free_slots = []

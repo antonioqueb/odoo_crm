@@ -49,8 +49,6 @@ def get_events(models, db, uid, password, mexico_tz):
         logging.debug(f"Fechas en UTC para consulta a Odoo: start={start_str_utc}, end={end_str_utc}")
 
         # Buscar eventos en Odoo usando las fechas en UTC
-        # Asegúrate de que los nombres de los campos son correctos
-        # Aquí asumimos que los campos son 'start' y 'stop'; cámbialos si es necesario
         search_domain = [
             ('start', '<=', end_str_utc),
             ('stop', '>=', start_str_utc),
@@ -60,7 +58,7 @@ def get_events(models, db, uid, password, mexico_tz):
         logging.debug(f"Dominio de búsqueda en Odoo: {search_domain}")
 
         events = models.execute_kw(
-            db, uid, password, 'calendar.event', 'search_read', [search_domain], 
+            db, uid, password, 'calendar.event', 'search_read', [search_domain],
             {'fields': ['start', 'stop']}
         )
 
@@ -73,16 +71,16 @@ def get_events(models, db, uid, password, mexico_tz):
 
             logging.debug(f"Evento UTC: inicio={event_start_utc}, fin={event_stop_utc}")
 
-            # Convertir a la zona horaria de México
-            event_start_mx = event_start_utc.astimezone(mexico_tz)
-            event_stop_mx = event_stop_utc.astimezone(mexico_tz)
+            # Convertir a UTC y formatear sin el indicativo de zona horaria
+            event_start_formatted = event_start_utc.strftime('%Y-%m-%dT%H:%M:%S') + '+00:00'
+            event_stop_formatted = event_stop_utc.strftime('%Y-%m-%dT%H:%M:%S') + '+00:00'
 
-            logging.debug(f"Evento México TZ: inicio={event_start_mx}, fin={event_stop_mx}")
+            logging.debug(f"Evento formateado a UTC: inicio={event_start_formatted}, fin={event_stop_formatted}")
 
-            # Actualizar las fechas en formato ISO en la zona horaria de México
+            # Actualizar las fechas en el evento
             event.update({
-                'start': event_start_mx.isoformat(),
-                'stop': event_stop_mx.isoformat()
+                'start': event_start_formatted,
+                'stop': event_stop_formatted
             })
 
         # Devolver los eventos con las fechas convertidas
@@ -90,5 +88,4 @@ def get_events(models, db, uid, password, mexico_tz):
 
     except Exception as e:
         logging.error(f"Error en get_events: {e}")
-        # En caso de error, devolver el mensaje de error
         return jsonify({'status': 'error', 'message': str(e)}), 500
