@@ -8,7 +8,7 @@ from free_slots import free_slots  # Importamos la función free_slots
 from opportunity import create_opportunity  # Importamos create_opportunity
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://inventario-plus.online/"}})
+CORS(app, resources={r"/*": {"origins": "https://inventario-plus.online"}})
 
 def register_routes():
     routes = [
