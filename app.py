@@ -4,8 +4,8 @@ from flask_cors import CORS
 from config import models, db, uid, password, mexico_tz
 from eventos import get_events
 from slots import available_slots
-from free_slots import free_slots  # Importamos la función free_slots
-from opportunity import create_opportunity  # Importamos create_opportunity
+from free_slots import free_slots 
+from opportunity import create_opportunity  
 
 app = Flask(__name__)
 
@@ -15,7 +15,7 @@ CORS(app, resources={
             "https://inventario-plus.online", 
             "https://cumplimiento-normativo.inventario-plus.online", 
             "https://implementamos-tu-erp.gestpro.cloud",
-            "https://migraciones-erp.gestpro.cloud/"
+            "https://migraciones-erp.gestpro.cloud"
         ]
     }
 })
