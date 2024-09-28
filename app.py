@@ -14,7 +14,8 @@ CORS(app, resources={
         "origins": [
             "https://inventario-plus.online", 
             "https://cumplimiento-normativo.inventario-plus.online", 
-            "https://implementamos-tu-erp.gestpro.cloud"
+            "https://implementamos-tu-erp.gestpro.cloud",
+            "https://migraciones-erp.gestpro.cloud/"
         ]
     }
 })
