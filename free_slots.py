@@ -19,7 +19,7 @@ def free_slots(models, db, uid, password):
 
         # **Primero**: Obtener los slots disponibles
         slot_api_url = (
-            f'https://crm.gestpro.cloud/available_slots?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+            f'https://crm.gestiones-empresariales-campeche.cloud/available_slots?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
         slot_response = requests.get(slot_api_url)
         if slot_response.status_code != 200:
@@ -31,7 +31,7 @@ def free_slots(models, db, uid, password):
 
         # **Segundo**: Obtener los eventos ocupados
         event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+            f'https://crm.gestiones-empresariales-campeche.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
         event_response = requests.get(event_api_url)
         if event_response.status_code != 200:

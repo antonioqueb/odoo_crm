@@ -16,7 +16,7 @@ def available_slots(models, db, uid, password, mexico_tz):
 
         # Consultar eventos programados desde la API de eventos
         event_api_url = (
-            f'https://crm.gestpro.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
+            f'https://crm.gestiones-empresariales-campeche.cloud/events?start_time={start_time}&end_time={end_time}&company_id={company_id}'
         )
         response = requests.get(event_api_url)
         if response.status_code != 200:

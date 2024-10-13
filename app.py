@@ -12,12 +12,7 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://inventario-plus.online", 
-            "https://cumplimiento-normativo.inventario-plus.online", 
-            "https://implementamos-tu-erp.gestpro.cloud",
-            "https://migraciones-erp.gestpro.cloud",
-            "https://manufactura.inventario-plus.online",
-            "https://erp-conectado.gestpro.cloud"
+            "https://gestiones-empresariales-campeche.online"
         ]
     }
 })
