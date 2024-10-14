@@ -73,6 +73,12 @@ def available_slots(models, db, uid, password, mexico_tz):
             end_dt = end_dt.astimezone(mexico_tz)
 
         while current_time + timedelta(hours=1) <= end_dt:
+            # Omitir los domingos
+            if current_time.weekday() == 6:  # 6 representa el domingo
+                current_time += timedelta(days=1)
+                current_time = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                continue
+
             next_time = current_time + timedelta(hours=1)
             time_slot = (current_time.strftime('%H:%M'), next_time.strftime('%H:%M'))
 
@@ -80,7 +86,6 @@ def available_slots(models, db, uid, password, mexico_tz):
             if (
                 time_slot in working_hours and 
                 all(next_time <= b[0] or current_time >= b[1] for b in busy_times)
-                # current_time > datetime.now(mexico_tz)  # Esta línea se comenta temporalmente
             ):
                 # Depuración: Verificar slots disponibles
                 print(f"Slot disponible: {current_time.strftime('%H:%M')} - {next_time.strftime('%H:%M')}")
